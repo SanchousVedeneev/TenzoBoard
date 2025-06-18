@@ -3,26 +3,28 @@
 
 #include "main.h"
 
-#define PROGRAM_ADC_MAX_FILTER_ORDER         (24)
 
 typedef enum
 {
     ADC_ADS1251 = 0,
-    ADC_CPU = 1,
+    ADC_ADS1231 = 1,
     ADC_T = 2
 } ADC_enum;
 
 typedef struct 
 {
-    uint16_t state_led_rele;
-    uint16_t control_led_rele; 
-    uint16_t spi_buf_0[3];
-    uint16_t ADC_CPU_data;
-    uint16_t ADC_T_data;
-    uint16_t ADC_ADS1251_data_u16;
-    uint32_t ADC_ADS1251_data_u32;
-} Mdb_data_AO_struct;
+    uint16_t spi_buf_ADS1251[3];
+    int16_t  ADC_ADS1251_data_i16;
+    int32_t  ADC_ADS1251_data_i32;
 
+    uint16_t spi_buf_ADS1231[3];
+    int16_t  ADC_ADS1231_data_i16;
+    int32_t  ADC_ADS1231_data_i32;
+
+    int16_t  ADC_T_data_i16;
+} Mdb_data_AI_struct;
+
+#define PROGRAM_ADC_MAX_FILTER_ORDER   (10)
 typedef struct {
     float value;
     float value_last;
@@ -33,10 +35,12 @@ typedef struct {
     uint8_t order;
 }ADC_filter_typedef;
 
+
+#define COUNT_TENZO_ADC (2)
 typedef struct 
 {
-    Mdb_data_AO_struct Mdb_data_AO;
-    ADC_filter_typedef adc_filter[3];
+    Mdb_data_AI_struct Mdb_data_AI;
+    ADC_filter_typedef adc_filter[COUNT_TENZO_ADC];
 } App_struct;
 
 //------------------------------ FUNCTION ------------------------------//
@@ -45,7 +49,6 @@ void app_init();
 void app_update_reg();
 void app_adc_data_filter(uint32_t ADC_Buf_raw, ADC_enum ADC);
 void app_adc_filter_init();
-void app_control_led_rele(uint16_t control_led_rele);
 //---------------------------- FUNCTION END ----------------------------//
 
 #endif

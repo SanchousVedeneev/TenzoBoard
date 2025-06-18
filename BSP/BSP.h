@@ -10,28 +10,28 @@
 //------------------------------ DEFINE ------------------------------//
 #define BSP_LED_1                 DO_LED_1_GPIO_Port, DO_LED_1_Pin
 #define BSP_LED_2                 DO_LED_2_GPIO_Port, DO_LED_2_Pin
-#define BSP_LED_3                 DO_LED_3_GPIO_Port, DO_LED_3_Pin
-#define BSP_LED_4                 DO_LED_4_GPIO_Port, DO_LED_4_Pin
 
 #define BSP_LED_ON(LED)			  HAL_GPIO_WritePin(LED, GPIO_PIN_SET)
 #define BSP_LED_OFF(LED)	      HAL_GPIO_WritePin(LED, GPIO_PIN_RESET)
 #define BSP_LED_TOGGLE(LED)		  HAL_GPIO_TogglePin(LED)
 
-#define BSP_REL_1                 DO_REL_1_GPIO_Port, DO_REL_1_Pin
-#define BSP_REL_2                 DO_REL_2_GPIO_Port, DO_REL_2_Pin
-#define BSP_REL_3                 DO_REL_3_GPIO_Port, DO_REL_3_Pin
-#define BSP_REL_4                 DO_REL_4_GPIO_Port, DO_REL_4_Pin
+#define BSP_ADR_0                 DI_ADR_0_GPIO_Port, DI_ADR_1_Pin
+#define BSP_ADR_1                 DI_ADR_1_GPIO_Port, DI_ADR_1_Pin
+#define BSP_ADR_2                 DI_ADR_2_GPIO_Port, DI_ADR_2_Pin
+#define BSP_ADR_3                 DI_ADR_3_GPIO_Port, DI_ADR_3_Pin
+#define BSP_ADR_4                 DI_ADR_4_GPIO_Port, DI_ADR_4_Pin
+#define BSP_ADR_5                 DI_ADR_5_GPIO_Port, DI_ADR_5_Pin
 
-#define BSP_REL_ON(REL)			  HAL_GPIO_WritePin(REL, GPIO_PIN_SET)
-#define BSP_REL_OFF(REL)		  HAL_GPIO_WritePin(REL, GPIO_PIN_RESET)
-#define BSP_REL_TOGGLE(REL)		  HAL_GPIO_TogglePin(REL)
+#define BSP_GET_DI(PORT_PIN)      (HAL_GPIO_ReadPin(PORT_PIN))
+
+#define BSP_SLEEP                 DO_SLEEP_GPIO_Port, DO_SLEEP_Pin
+
+#define BSP_SLEEP_ON		      HAL_GPIO_WritePin(BSP_SLEEP, GPIO_PIN_RESET)
+#define BSP_SLEEP_OFF             HAL_GPIO_WritePin(BSP_SLEEP, GPIO_PIN_SET)
 
 #define BSP_GET_BIT(REG, BIT)     (REG & (1 << BIT))
 #define BSP_SET_BIT(REG, BIT)     (REG |= (1 << BIT))
 #define BSP_RESET_BIT(REG, BIT)   (REG &= ~(1 << BIT))
-
-#define BSP_GET_DI(PORT_PIN)      (HAL_GPIO_ReadPin(PORT_PIN))
-
 //---------------------------- DEFINE END ----------------------------//
 
 //------------------------------- ENUM -------------------------------//
@@ -57,6 +57,8 @@ void bsp_rs485_sendTestBlock(uint8_t portNo);
 void bsp_rs485_callback_rxBlockReady(uint8_t portNo);
 void bsp_rs485_callback_rxTimeout(uint8_t portNo);
 
+uint8_t bsp_get_adr_mdb();
+
 #define BSP_RS485_1_IRQ_HANDLER_RTOF 			USART1_IRQHandler
 #define BSP_RS485_1_IRQ_HANDLER_DMA_RX 			DMA1_Channel1_IRQHandler
 #define BSP_RS485_1_IRQ_HANDLER_DMA_TX 			DMA1_Channel2_IRQHandler
@@ -70,8 +72,11 @@ void bsp_tim6_10ms_start();
 // --------------------------- TIM END --------------------------- //
 
 // ----------------------------- SPI ----------------------------- //
-uint32_t bsp_get_data_spi();
-extern uint8_t SPI_DATA_RX[8];
+uint32_t bsp_get_data_spi_ads1251();
+extern uint8_t SPI_data_rx_ADS1251[4];
+
+uint32_t bsp_get_data_spi_ads1231();
+extern uint8_t SPI_data_rx_ADS1231[4];
 // --------------------------- SPI END --------------------------- //
 
 // ----------------------------- ADC ----------------------------- //

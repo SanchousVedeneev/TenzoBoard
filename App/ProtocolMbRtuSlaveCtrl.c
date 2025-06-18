@@ -11,18 +11,23 @@ uint8_t modbusBufRxTxRtu485[MODBUS_SS_BUF_CNT];
 #define MDB_TABLE_BSP_REG_NO (1000)
 enum mdb_table_bsp
 {
-  tab_bsp_state_led_rele = MDB_TABLE_BSP_REG_NO,
-  tab_bsp_control_led_rele,
-  tab_bsp_spi_buf_0,
-  tab_bsp_spi_buf_1,
-  tab_bsp_spi_buf_2,
-  tab_bsp_ADC_CPU_data,
-  tab_bsp_ADC_T_data,
-  tab_bsp_ADC_ADS1251_data_u16,
-  tab_bsp_ADC_ADS1251_data_u32_1,
-  tab_bsp_ADC_ADS1251_data_u32_2
+  tab_bsp_spi_buf_ADS1251_0 = MDB_TABLE_BSP_REG_NO,
+  tab_bsp_spi_buf_ADS1251_1,
+  tab_bsp_spi_buf_ADS1251_2,
+  tab_bsp_ADC_ADS1251_data_i16,
+  tab_bsp_ADC_ADS1251_data_i32_1,
+  tab_bsp_ADC_ADS1251_data_i32_2,
+
+  tab_bsp_spi_buf_ADS1231_0,
+  tab_bsp_spi_buf_ADS1231_1,
+  tab_bsp_spi_buf_ADS1231_2,
+  tab_bsp_ADC_ADS1231_data_i16,
+  tab_bsp_ADC_ADS1231_data_i32_1,
+  tab_bsp_ADC_ADS1231_data_i32_2,
+
+  tab_bsp_ADC_T_data_i16,
 };
-#define MDB_BSP_BUF_COUNT (tab_bsp_ADC_ADS1251_data_u32_2 - MDB_TABLE_BSP_REG_NO + 1)
+#define MDB_BSP_BUF_COUNT (tab_bsp_ADC_T_data_i16 - MDB_TABLE_BSP_REG_NO + 1)
 uint16_t mdb_bsp_buf[MDB_BSP_BUF_COUNT];
 
 ModbusSS_table_t mdb_table_bsp = {
@@ -60,23 +65,26 @@ void protocolMbRtuSlaveCtrl_init(uint8_t portNo)
 {
   HAL_Delay(100);
   bsp_rs485_setPortToModbusRtu(portNo, modbusBufRxTxRtu485, MODBUS_SS_BUF_CNT);
+  modbusSS_rtu_rs485.slaveId = bsp_get_adr_mdb();
 }
 
 __INLINE void protocolMbRtuSlaveCtrl_update_tables()
 {
-  ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_state_led_rele,           App.Mdb_data_AO.state_led_rele);
-  ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_control_led_rele,         App.Mdb_data_AO.control_led_rele);
-  ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_spi_buf_0,                App.Mdb_data_AO.spi_buf_0[0]);
-  ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_spi_buf_1,                App.Mdb_data_AO.spi_buf_0[1]);
-  ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_spi_buf_2,                App.Mdb_data_AO.spi_buf_0[2]);
+  ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_spi_buf_ADS1251_0,        App.Mdb_data_AI.spi_buf_ADS1251[0]);
+  ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_spi_buf_ADS1251_1,        App.Mdb_data_AI.spi_buf_ADS1251[1]);
+  ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_spi_buf_ADS1251_2,        App.Mdb_data_AI.spi_buf_ADS1251[2]);
+  ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_ADC_ADS1251_data_i16,     (uint16_t)App.Mdb_data_AI.ADC_ADS1251_data_i16);
+  ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_ADC_ADS1251_data_i32_1,   (uint16_t)( App.Mdb_data_AI.ADC_ADS1251_data_i32 & 0x0000FFFF));
+  ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_ADC_ADS1251_data_i32_2,   (uint16_t)((App.Mdb_data_AI.ADC_ADS1251_data_i32 & 0xFFFF0000) >> 16));
 
-  ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_ADC_CPU_data,             App.Mdb_data_AO.ADC_CPU_data);
-  ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_ADC_T_data,               App.Mdb_data_AO.ADC_T_data);
+  ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_spi_buf_ADS1231_0,        App.Mdb_data_AI.spi_buf_ADS1231[0]);
+  ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_spi_buf_ADS1231_1,        App.Mdb_data_AI.spi_buf_ADS1231[1]);
+  ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_spi_buf_ADS1231_2,        App.Mdb_data_AI.spi_buf_ADS1231[2]);
+  ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_ADC_ADS1231_data_i16,     (uint16_t)App.Mdb_data_AI.ADC_ADS1231_data_i16);
+  ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_ADC_ADS1231_data_i32_1,   (uint16_t)( App.Mdb_data_AI.ADC_ADS1231_data_i32 & 0x0000FFFF));
+  ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_ADC_ADS1231_data_i32_2,   (uint16_t)((App.Mdb_data_AI.ADC_ADS1231_data_i32 & 0xFFFF0000) >> 16));
 
-  ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_ADC_ADS1251_data_u16,     App.Mdb_data_AO.ADC_ADS1251_data_u16);
-
-  ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_ADC_ADS1251_data_u32_1,   (uint16_t)(App.Mdb_data_AO.ADC_ADS1251_data_u32 & 0x0000FFFF));
-  ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_ADC_ADS1251_data_u32_2,   (uint16_t)(App.Mdb_data_AO.ADC_ADS1251_data_u32 & 0XFFFF0000));
+  ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_ADC_T_data_i16,           (uint16_t)App.Mdb_data_AI.ADC_T_data_i16);
 }
 //------------------------ REGULAR FCN END------------------------
 
@@ -84,22 +92,22 @@ __INLINE void protocolMbRtuSlaveCtrl_update_tables()
 __weak void protocolMbRtuSlaveCtrl_callback_H_WRITE(ModbusSS_table_t *table, uint16_t reg, uint16_t quantity)
 {
 
-  uint16_t value = 0.0f;
+  //uint16_t value = 0.0f;
   asm("NOP");
 
-  if (table == &mdb_table_bsp) // Диапазон BSP
-  {
-    value = ModbusSS_GetWord(&mdb_table_bsp, reg);
-    switch (reg)
-    {
-    case tab_bsp_control_led_rele:
-      App.Mdb_data_AO.control_led_rele = value;
-      app_control_led_rele(value);
-      break;
-    default:
-      break;
-    }
-  }
+  // if (table == &mdb_table_bsp) // Диапазон BSP
+  // {
+  //   value = ModbusSS_GetWord(&mdb_table_bsp, reg);
+  //   switch (reg)
+  //   {
+  //   case tab_bsp_control_led_rele:
+  //     App.Mdb_data_AO.control_led_rele = value;
+  //     app_control_led_rele(value);
+  //     break;
+  //   default:
+  //     break;
+  //   }
+  // }
   
 }
 

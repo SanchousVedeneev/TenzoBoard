@@ -74,18 +74,18 @@ void Error_Handler(void);
 #define DO_LED_2_GPIO_Port GPIOA
 #define DO_SLEEP_Pin GPIO_PIN_4
 #define DO_SLEEP_GPIO_Port GPIOC
-#define DI_REL_6_Pin GPIO_PIN_10
-#define DI_REL_6_GPIO_Port GPIOC
-#define DI_REL_5_Pin GPIO_PIN_11
-#define DI_REL_5_GPIO_Port GPIOC
-#define DI_REL_4_Pin GPIO_PIN_12
-#define DI_REL_4_GPIO_Port GPIOC
-#define DI_REL_3_Pin GPIO_PIN_2
-#define DI_REL_3_GPIO_Port GPIOD
-#define DI_REL_2_Pin GPIO_PIN_3
-#define DI_REL_2_GPIO_Port GPIOB
-#define DI_REL_1_Pin GPIO_PIN_4
-#define DI_REL_1_GPIO_Port GPIOB
+#define DI_ADR_5_Pin GPIO_PIN_10
+#define DI_ADR_5_GPIO_Port GPIOC
+#define DI_ADR_4_Pin GPIO_PIN_11
+#define DI_ADR_4_GPIO_Port GPIOC
+#define DI_ADR_3_Pin GPIO_PIN_12
+#define DI_ADR_3_GPIO_Port GPIOC
+#define DI_ADR_2_Pin GPIO_PIN_2
+#define DI_ADR_2_GPIO_Port GPIOD
+#define DI_ADR_1_Pin GPIO_PIN_3
+#define DI_ADR_1_GPIO_Port GPIOB
+#define DI_ADR_0_Pin GPIO_PIN_4
+#define DI_ADR_0_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

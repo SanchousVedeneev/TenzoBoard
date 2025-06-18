@@ -100,7 +100,7 @@ void BSP_RS485_1_IRQ_HANDLER_RTOF(void)
 
     if (BSP_RS485_1.NbRxDataToProcess != BSP_RS485_1.hdmarx->Instance->CNDTR)
     {
-      BSP_LED_TOGGLE(BSP_LED_4);
+      BSP_LED_TOGGLE(BSP_LED_1);
       bsp_rs485_callback_rxBlockReady(1);
       // bsp_dInOut_toggleDout(bsp_dInOut_led_rs485_1_g);
       // bsp_dInOut_resetDout(bsp_dInOut_led_rs485_1_y);
@@ -126,6 +126,79 @@ void BSP_RS485_1_IRQ_HANDLER_RTOF(void)
     Error_Handler();
     NVIC_SystemReset();
   }
+}
+
+#define ADR_MDB_MIN  (uint8_t)(1)
+#define ADR_MDB_MAX  (uint8_t)(63)
+
+uint8_t bsp_get_adr_mdb()
+{
+  uint8_t adr_mdb = 1;
+  
+  if (BSP_GET_DI(BSP_ADR_0) == GPIO_PIN_SET)
+  {
+    BSP_SET_BIT(adr_mdb, 0);
+  }
+  else
+  {
+    BSP_RESET_BIT(adr_mdb, 0);
+  }
+
+  if (BSP_GET_DI(BSP_ADR_1) == GPIO_PIN_SET)
+  {
+    BSP_SET_BIT(adr_mdb, 1);
+  }
+  else
+  {
+    BSP_RESET_BIT(adr_mdb, 1);
+  }
+
+  if (BSP_GET_DI(BSP_ADR_2) == GPIO_PIN_SET)
+  {
+    BSP_SET_BIT(adr_mdb, 2);
+  }
+  else
+  {
+    BSP_RESET_BIT(adr_mdb, 2);
+  }
+
+  if (BSP_GET_DI(BSP_ADR_3) == GPIO_PIN_SET)
+  {
+    BSP_SET_BIT(adr_mdb, 3);
+  }
+  else
+  {
+    BSP_RESET_BIT(adr_mdb, 3);
+  }
+
+  if (BSP_GET_DI(BSP_ADR_4) == GPIO_PIN_SET)
+  {
+    BSP_SET_BIT(adr_mdb, 4);
+  }
+  else
+  {
+    BSP_RESET_BIT(adr_mdb, 4);
+  }
+
+  if (BSP_GET_DI(BSP_ADR_5) == GPIO_PIN_SET)
+  {
+    BSP_SET_BIT(adr_mdb, 5);
+  }
+  else
+  {
+    BSP_RESET_BIT(adr_mdb, 5);
+  }
+
+  if (adr_mdb < ADR_MDB_MIN)
+  {
+    adr_mdb = ADR_MDB_MIN;
+  }
+  else if (adr_mdb > ADR_MDB_MAX)
+  {
+    adr_mdb = ADR_MDB_MAX;
+  }
+
+  return adr_mdb;
 }
 // ------------------------------ RS485 END ------------------------------
 
@@ -170,8 +243,8 @@ __weak void bsp_ADC_data_ready();
 // ---------------------------- ADC END ----------------------------------
 
 // ------------------------------ SPI ------------------------------------
-uint8_t SPI_DATA_RX[8];
-uint32_t bsp_get_data_spi()
+uint8_t SPI_data_rx_ADS1251[4];
+uint32_t bsp_get_data_spi_ads1251()
 {
   uint32_t ADC_DATA_RAW = 0;
   HAL_TIM_OC_Start_IT(&htim1, TIM_CHANNEL_1);
@@ -192,12 +265,21 @@ uint32_t bsp_get_data_spi()
     ;
   }
 
-  HAL_SPI_Receive(&hspi2, &SPI_DATA_RX[0], 3, 1);
+  HAL_SPI_Receive(&hspi2, &SPI_data_rx_ADS1251[0], 3, 1);
   HAL_TIM_OC_Stop_IT(&htim1, TIM_CHANNEL_1);
 
-  ADC_DATA_RAW |= ((uint32_t)SPI_DATA_RX[0] << 16);
-  ADC_DATA_RAW |= ((uint32_t)SPI_DATA_RX[1] << 8);
-  ADC_DATA_RAW |= ((uint32_t)SPI_DATA_RX[2] << 0);
+  ADC_DATA_RAW |= ((uint32_t)SPI_data_rx_ADS1251[0] << 16);
+  ADC_DATA_RAW |= ((uint32_t)SPI_data_rx_ADS1251[1] << 8);
+  ADC_DATA_RAW |= ((uint32_t)SPI_data_rx_ADS1251[2] << 0);
   return ADC_DATA_RAW;
 }
+
+uint8_t SPI_data_rx_ADS1231[4];
+uint32_t bsp_get_data_spi_ads1231()
+{
+  uint32_t ADC_DATA_RAW = 0;
+  asm("NOP");
+  return ADC_DATA_RAW;
+}
+
 // ---------------------------- SPI END ----------------------------------

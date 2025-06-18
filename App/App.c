@@ -19,6 +19,7 @@ void app_init()
 {
   protocolMbRtuSlaveCtrl_init(1);
   app_adc_filter_init();
+  BSP_SLEEP_ON;
   return;
 }
 
@@ -33,23 +34,22 @@ void app_adc_filter_init()
       App.adc_filter[ADC_ADS1251].buf[j] = 0.0f;
     }
     App.adc_filter[ADC_ADS1251].bufIdx = 0;
-    App.adc_filter[ADC_ADS1251].filter_N = 200;
-    App.adc_filter[ADC_ADS1251].order = 24;
+    App.adc_filter[ADC_ADS1251].filter_N = 10;
+    App.adc_filter[ADC_ADS1251].order = 5;
 // ------------------------ ADC_ADS1251 END ------------------------ //
 
-// -------------------------- ADC_CPU -------------------------- //
-    App.adc_filter[ADC_CPU].value = 0.0f;
-    App.adc_filter[ADC_CPU].value_last = 0.0f;
-    App.adc_filter[ADC_CPU].valueRaw = 0.0f;
+// -------------------------- ADC_ADS1231 -------------------------- //
+    App.adc_filter[ADC_ADS1231].value = 0.0f;
+    App.adc_filter[ADC_ADS1231].value_last = 0.0f;
+    App.adc_filter[ADC_ADS1231].valueRaw = 0.0f;
     for (uint8_t j = 0; j < PROGRAM_ADC_MAX_FILTER_ORDER; j++)
     {
-      App.adc_filter[ADC_CPU].buf[j] = 0.0f;
+      App.adc_filter[ADC_ADS1231].buf[j] = 0.0f;
     }
-    App.adc_filter[ADC_CPU].bufIdx = 0;
-    App.adc_filter[ADC_CPU].filter_N = 250;
-    App.adc_filter[ADC_CPU].order = 24;
-// ------------------------ ADC_CPU END ------------------------ //
-
+    App.adc_filter[ADC_ADS1231].bufIdx = 0;
+    App.adc_filter[ADC_ADS1231].filter_N = 10;
+    App.adc_filter[ADC_ADS1231].order = 5;
+// ------------------------ ADC_ADS1231 END ------------------------ //
 }
 
 void bsp_tim7_1ms_callback()
@@ -60,109 +60,39 @@ void bsp_tim7_1ms_callback()
 
 void app_update_reg()
 {
-  //LED1
-  if (BSP_GET_DI(BSP_LED_1) == GPIO_PIN_SET)
-  {
-    BSP_SET_BIT(App.Mdb_data_AO.state_led_rele, LED_1);
-  }
-  else
-  {
-    BSP_RESET_BIT(App.Mdb_data_AO.state_led_rele, LED_1);
-  }
+  App.Mdb_data_AI.spi_buf_ADS1251[0] = SPI_data_rx_ADS1251[0];
+  App.Mdb_data_AI.spi_buf_ADS1251[1] = SPI_data_rx_ADS1251[1];
+  App.Mdb_data_AI.spi_buf_ADS1251[2] = SPI_data_rx_ADS1251[2];
 
-  //LED2
-  if (BSP_GET_DI(BSP_LED_2) == GPIO_PIN_SET)
-  {
-    BSP_SET_BIT(App.Mdb_data_AO.state_led_rele, LED_2);
-  }
-  else
-  {
-    BSP_RESET_BIT(App.Mdb_data_AO.state_led_rele, LED_2);
-  }
+  App.Mdb_data_AI.ADC_T_data_i16 = App.adc_filter[ADC_T].value;
 
-  //LED3
-  if (BSP_GET_DI(BSP_LED_3) == GPIO_PIN_SET)
-  {
-    BSP_SET_BIT(App.Mdb_data_AO.state_led_rele, LED_3);
-  }
-  else
-  {
-    BSP_RESET_BIT(App.Mdb_data_AO.state_led_rele, LED_3);
-  }
-
-  //LED4
-  if (BSP_GET_DI(BSP_LED_4) == GPIO_PIN_SET)
-  {
-    BSP_SET_BIT(App.Mdb_data_AO.state_led_rele, LED_4);
-  }
-  else
-  {
-    BSP_RESET_BIT(App.Mdb_data_AO.state_led_rele, LED_4);
-  }
-
-  //REL1
-  if (BSP_GET_DI(BSP_REL_1) == GPIO_PIN_SET)
-  {
-    BSP_SET_BIT(App.Mdb_data_AO.state_led_rele, REL_1);
-  }
-  else
-  {
-    BSP_RESET_BIT(App.Mdb_data_AO.state_led_rele, REL_1);
-  }
-
-  //REL2
-  if (BSP_GET_DI(BSP_REL_2) == GPIO_PIN_SET)
-  {
-    BSP_SET_BIT(App.Mdb_data_AO.state_led_rele, REL_2);
-  }
-  else
-  {
-    BSP_RESET_BIT(App.Mdb_data_AO.state_led_rele, REL_2);
-  }
-
-  //REL3
-  if (BSP_GET_DI(BSP_REL_3) == GPIO_PIN_SET)
-  {
-    BSP_SET_BIT(App.Mdb_data_AO.state_led_rele, REL_3);
-  }
-  else
-  {
-    BSP_RESET_BIT(App.Mdb_data_AO.state_led_rele, REL_3);
-  }
-
-  //REL4
-  if (BSP_GET_DI(BSP_REL_4) == GPIO_PIN_SET)
-  {
-    BSP_SET_BIT(App.Mdb_data_AO.state_led_rele, REL_4);
-  }
-  else
-  {
-    BSP_RESET_BIT(App.Mdb_data_AO.state_led_rele, REL_4);
-  }
-  
-  App.Mdb_data_AO.spi_buf_0[0] = SPI_DATA_RX[0];
-  App.Mdb_data_AO.spi_buf_0[1] = SPI_DATA_RX[1];
-  App.Mdb_data_AO.spi_buf_0[2] = SPI_DATA_RX[2];
-
-  App.Mdb_data_AO.ADC_CPU_data = App.adc_filter[ADC_CPU].value;
-  App.Mdb_data_AO.ADC_T_data = App.adc_filter[ADC_T].value;
-
-  App.Mdb_data_AO.ADC_ADS1251_data_u16 = App.adc_filter[ADC_ADS1251].value;
-  App.Mdb_data_AO.ADC_ADS1251_data_u32 = (uint32_t)(App.adc_filter[ADC_ADS1251].value*10.0f);
+  App.Mdb_data_AI.ADC_ADS1251_data_i16 = App.adc_filter[ADC_ADS1251].value;
+  App.Mdb_data_AI.ADC_ADS1251_data_i32 = (uint32_t)(App.adc_filter[ADC_ADS1251].value*10.0f);
 }
 
 void bsp_ADC_data_ready()
 {
-  BSP_LED_TOGGLE(BSP_LED_3);
-  app_adc_data_filter((HAL_ADCEx_InjectedGetValue(&hadc2, ADC_INJECTED_RANK_2)/16), ADC_CPU);
-  app_adc_data_filter((HAL_ADCEx_InjectedGetValue(&hadc2, ADC_INJECTED_RANK_1)/16), ADC_T);
-  app_adc_data_filter(bsp_get_data_spi(), ADC_ADS1251);
+  uint16_t ADC_T_data = 0;
+  
+  ADC_T_data = (uint16_t)(HAL_ADCEx_InjectedGetValue(&hadc2, ADC_INJECTED_RANK_1)/16);
+  //@do
+  // Дописать обработчик для значения температуры c АЦП
+
+  BSP_SLEEP_OFF;
+  HAL_Delay(1);
+  app_adc_data_filter(bsp_get_data_spi_ads1251(), ADC_ADS1251);
+
+
+  BSP_SLEEP_ON;
+  BSP_LED_TOGGLE(BSP_LED_1);
 }
 
-#define ADC_ADS1251_MAX_VAL 8388607.0f
-#define ADC_ADS1251_REF_VOLT  3.3f
-#define ADC_CPU_MAX_VAL 4096.0f
-#define ADC_CPU_REF_VOLT  3.3f
+#define ADC_ADS1251_MAX_VAL   (float)(8388607.0f)
+#define ADC_ADS1251_REF_VOLT  (float)(4.0f)
+
+#define ADC_ADS1231_MAX_VAL   (float)(8388607.0f)
+#define ADC_ADS1231_REF_VOLT  (float)(4.0f)
+
 void app_adc_data_filter(uint32_t ADC_Buf_raw, ADC_enum adc)
 {
   float value = 0.0f;
@@ -174,9 +104,9 @@ void app_adc_data_filter(uint32_t ADC_Buf_raw, ADC_enum adc)
   {
     data = ((float)ADC_Buf_raw / ADC_ADS1251_MAX_VAL * ADC_ADS1251_REF_VOLT * 1000.0f);
   }
-  else if (adc == ADC_CPU)
+  else if (adc == ADC_ADS1231)
   {
-    data = ((float)ADC_Buf_raw / ADC_CPU_MAX_VAL * ADC_CPU_REF_VOLT * 1000.0f);
+    data = ((float)ADC_Buf_raw / ADC_ADS1231_MAX_VAL * ADC_ADS1231_REF_VOLT * 1000.0f);
   }
 
   App.adc_filter[adc].buf[App.adc_filter[adc].bufIdx++] = data;
@@ -202,87 +132,5 @@ void app_adc_data_filter(uint32_t ADC_Buf_raw, ADC_enum adc)
   App.adc_filter[adc].value_last = value;
 }
 
-void app_control_led_rele(uint16_t control_led_rele)
-{
-    // LED1
-    if(BSP_GET_BIT(App.Mdb_data_AO.control_led_rele, LED_1))
-    {
-      BSP_LED_ON(BSP_LED_1);
-    }
-    else
-    {
-      BSP_LED_OFF(BSP_LED_1);
-    }
-
-    // LED2
-    if(BSP_GET_BIT(App.Mdb_data_AO.control_led_rele, LED_2))
-    {
-      BSP_LED_ON(BSP_LED_2);
-    }
-    else
-    {
-      BSP_LED_OFF(BSP_LED_2);
-    }
-
-    // LED3
-    if(BSP_GET_BIT(App.Mdb_data_AO.control_led_rele, LED_3))
-    {
-      BSP_LED_ON(BSP_LED_3);
-    }
-    else
-    {
-      BSP_LED_OFF(BSP_LED_3);
-    }
-
-    // LED4
-    if(BSP_GET_BIT(App.Mdb_data_AO.control_led_rele, LED_4))
-    {
-      BSP_LED_ON(BSP_LED_4);
-    }
-    else
-    {
-      BSP_LED_OFF(BSP_LED_4);
-    }
-
-    // REL_1
-    if(BSP_GET_BIT(App.Mdb_data_AO.control_led_rele, REL_1))
-    {
-      BSP_REL_ON(BSP_REL_1);
-    }
-    else
-    {
-      BSP_REL_OFF(BSP_REL_1);
-    }
-
-    // REL_2
-    if(BSP_GET_BIT(App.Mdb_data_AO.control_led_rele, REL_2))
-    {
-      BSP_REL_ON(BSP_REL_2);
-    }
-    else
-    {
-      BSP_REL_OFF(BSP_REL_2);
-    }
-
-    // REL_3
-    if(BSP_GET_BIT(App.Mdb_data_AO.control_led_rele, REL_3))
-    {
-      BSP_REL_ON(BSP_REL_3);
-    }
-    else
-    {
-      BSP_REL_OFF(BSP_REL_3);
-    }
-
-    // REL_4
-    if(BSP_GET_BIT(App.Mdb_data_AO.control_led_rele, REL_3))
-    {
-      BSP_REL_ON(BSP_REL_4);
-    }
-    else
-    {
-      BSP_REL_OFF(BSP_REL_4);
-    }
-}
 
 

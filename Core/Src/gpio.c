@@ -65,7 +65,7 @@ void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PCPin PCPin PCPin PCPin */
-  GPIO_InitStruct.Pin = DI_IN_1_Pin|DI_REL_6_Pin|DI_REL_5_Pin|DI_REL_4_Pin;
+  GPIO_InitStruct.Pin = DI_IN_1_Pin|DI_ADR_5_Pin|DI_ADR_4_Pin|DI_ADR_3_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
@@ -78,13 +78,13 @@ void MX_GPIO_Init(void)
   HAL_GPIO_Init(DO_LED_2_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PtPin */
-  GPIO_InitStruct.Pin = DI_REL_3_Pin;
+  GPIO_InitStruct.Pin = DI_ADR_2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(DI_REL_3_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(DI_ADR_2_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PBPin PBPin */
-  GPIO_InitStruct.Pin = DI_REL_2_Pin|DI_REL_1_Pin;
+  GPIO_InitStruct.Pin = DI_ADR_1_Pin|DI_ADR_0_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
