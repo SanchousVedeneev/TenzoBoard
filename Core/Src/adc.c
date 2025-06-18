@@ -47,7 +47,7 @@ void MX_ADC2_Init(void)
   hadc2.Init.Resolution = ADC_RESOLUTION_12B;
   hadc2.Init.DataAlign = ADC_DATAALIGN_RIGHT;
   hadc2.Init.GainCompensation = 0;
-  hadc2.Init.ScanConvMode = ADC_SCAN_ENABLE;
+  hadc2.Init.ScanConvMode = ADC_SCAN_DISABLE;
   hadc2.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
   hadc2.Init.LowPowerAutoWait = DISABLE;
   hadc2.Init.ContinuousConvMode = DISABLE;
@@ -69,7 +69,7 @@ void MX_ADC2_Init(void)
   sConfigInjected.InjectedSingleDiff = ADC_SINGLE_ENDED;
   sConfigInjected.InjectedOffsetNumber = ADC_OFFSET_NONE;
   sConfigInjected.InjectedOffset = 0;
-  sConfigInjected.InjectedNbrOfConversion = 2;
+  sConfigInjected.InjectedNbrOfConversion = 1;
   sConfigInjected.InjectedDiscontinuousConvMode = DISABLE;
   sConfigInjected.AutoInjectedConv = DISABLE;
   sConfigInjected.QueueInjectedContext = DISABLE;
@@ -78,15 +78,6 @@ void MX_ADC2_Init(void)
   sConfigInjected.InjecOversamplingMode = ENABLE;
   sConfigInjected.InjecOversampling.Ratio = ADC_OVERSAMPLING_RATIO_16;
   sConfigInjected.InjecOversampling.RightBitShift = ADC_RIGHTBITSHIFT_NONE;
-  if (HAL_ADCEx_InjectedConfigChannel(&hadc2, &sConfigInjected) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Configure Injected Channel
-  */
-  sConfigInjected.InjectedChannel = ADC_CHANNEL_11;
-  sConfigInjected.InjectedRank = ADC_INJECTED_RANK_2;
   if (HAL_ADCEx_InjectedConfigChannel(&hadc2, &sConfigInjected) != HAL_OK)
   {
     Error_Handler();
@@ -121,20 +112,13 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* adcHandle)
     __HAL_RCC_ADC12_CLK_ENABLE();
 
     __HAL_RCC_GPIOA_CLK_ENABLE();
-    __HAL_RCC_GPIOC_CLK_ENABLE();
     /**ADC2 GPIO Configuration
     PA0     ------> ADC2_IN1
-    PC5     ------> ADC2_IN11
     */
-    GPIO_InitStruct.Pin = AI_T_Pin;
+    GPIO_InitStruct.Pin = AI_NTC_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(AI_T_GPIO_Port, &GPIO_InitStruct);
-
-    GPIO_InitStruct.Pin = AI_R_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(AI_R_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_Init(AI_NTC_GPIO_Port, &GPIO_InitStruct);
 
     /* ADC2 interrupt Init */
     HAL_NVIC_SetPriority(ADC1_2_IRQn, 0, 0);
@@ -158,11 +142,8 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* adcHandle)
 
     /**ADC2 GPIO Configuration
     PA0     ------> ADC2_IN1
-    PC5     ------> ADC2_IN11
     */
-    HAL_GPIO_DeInit(AI_T_GPIO_Port, AI_T_Pin);
-
-    HAL_GPIO_DeInit(AI_R_GPIO_Port, AI_R_Pin);
+    HAL_GPIO_DeInit(AI_NTC_GPIO_Port, AI_NTC_Pin);
 
     /* ADC2 interrupt Deinit */
     HAL_NVIC_DisableIRQ(ADC1_2_IRQn);
