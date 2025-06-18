@@ -1,0 +1,1309 @@
+ARM GAS  C:\Users\sr1\AppData\Local\Temp\ccHJWCCg.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.arch armv7e-m
+   3              		.fpu fpv4-sp-d16
+   4              		.eabi_attribute 27, 1
+   5              		.eabi_attribute 28, 1
+   6              		.eabi_attribute 20, 1
+   7              		.eabi_attribute 21, 1
+   8              		.eabi_attribute 23, 3
+   9              		.eabi_attribute 24, 1
+  10              		.eabi_attribute 25, 1
+  11              		.eabi_attribute 26, 1
+  12              		.eabi_attribute 30, 1
+  13              		.eabi_attribute 34, 1
+  14              		.eabi_attribute 18, 4
+  15              		.file	"ModbusSS.c"
+  16              		.text
+  17              	.Ltext0:
+  18              		.cfi_sections	.debug_frame
+  19              		.file 1 "BSP/ModbusSS.c"
+  20              		.section	.text.getTable,"ax",%progbits
+  21              		.align	1
+  22              		.syntax unified
+  23              		.thumb
+  24              		.thumb_func
+  26              	getTable:
+  27              	.LVL0:
+  28              	.LFB332:
+   1:BSP/ModbusSS.c **** 
+   2:BSP/ModbusSS.c **** #include "ModbusSS.h"
+   3:BSP/ModbusSS.c **** 
+   4:BSP/ModbusSS.c **** __STATIC_INLINE uint16_t _Crc16(uint8_t *pcBlock, uint16_t len);
+   5:BSP/ModbusSS.c **** __STATIC_INLINE ModbusSS_table_t *getTable(ModbusSS_t *core, uint8_t f, uint16_t r, uint16_t q);
+   6:BSP/ModbusSS.c **** 
+   7:BSP/ModbusSS.c **** #define GET_DATA(buf, idx) *(buf + idx)
+   8:BSP/ModbusSS.c **** #define WRITE_DATA(buf, idx, value) (*(buf + idx) = value)
+   9:BSP/ModbusSS.c **** #define GET_WORD(buf, idx) (((uint16_t) * (buf + idx + 1)) | (((uint16_t) * (buf + idx)) << 8))
+  10:BSP/ModbusSS.c **** #define WRITE_WORD(buf, idx, word) (*((uint16_t *)(buf) + idx) = (((word) >> 8) | (word) << 8))
+  11:BSP/ModbusSS.c **** 
+  12:BSP/ModbusSS.c **** #define MB_ECODE_IN_RANGE (2)
+  13:BSP/ModbusSS.c **** #define MODBUS_TCP_BUF_OFFSET (6)
+  14:BSP/ModbusSS.c **** #define MB_POS_SLAVE_ID (0)
+  15:BSP/ModbusSS.c **** #define MB_POS_FUNC (1)
+  16:BSP/ModbusSS.c **** #define MB_POS_REG (2)
+  17:BSP/ModbusSS.c **** #define MB_POS_ECODE (2)
+  18:BSP/ModbusSS.c **** #define MB_POS_BYTE_CNT (2)
+  19:BSP/ModbusSS.c **** #define MB_POS_DATA (3)
+  20:BSP/ModbusSS.c **** #define MB_POS_QUANTITY (4)
+  21:BSP/ModbusSS.c **** 
+  22:BSP/ModbusSS.c **** #define MB_ERR_FUNC  (0x01)
+  23:BSP/ModbusSS.c **** #define MB_ERR_RANGE (0x02)
+  24:BSP/ModbusSS.c **** 
+  25:BSP/ModbusSS.c **** int32_t ModbusSS_ParseRxData(ModbusSS_t *mbCore)
+  26:BSP/ModbusSS.c **** {
+  27:BSP/ModbusSS.c ****     int32_t retLenError = -1;
+  28:BSP/ModbusSS.c **** #ifdef MODBUS_SS_STATIC
+  29:BSP/ModbusSS.c ****     if (mbCore == NULL)
+  30:BSP/ModbusSS.c ****     {
+ARM GAS  C:\Users\sr1\AppData\Local\Temp\ccHJWCCg.s 			page 2
+
+
+  31:BSP/ModbusSS.c ****         return retLenError;
+  32:BSP/ModbusSS.c ****     }
+  33:BSP/ModbusSS.c **** #else
+  34:BSP/ModbusSS.c ****     if ((mbCore == NULL) || mbCore->bufRxTx == NULL)
+  35:BSP/ModbusSS.c ****     {
+  36:BSP/ModbusSS.c ****         return retLenError;
+  37:BSP/ModbusSS.c ****     }
+  38:BSP/ModbusSS.c **** #endif
+  39:BSP/ModbusSS.c ****     uint8_t* buf = mbCore->bufRxTx;
+  40:BSP/ModbusSS.c ****     if (mbCore->rtuTcp == MODBUS_SS_TCP)
+  41:BSP/ModbusSS.c ****     {
+  42:BSP/ModbusSS.c ****         buf += MODBUS_TCP_BUF_OFFSET;
+  43:BSP/ModbusSS.c ****     }
+  44:BSP/ModbusSS.c ****     // Slave Id check
+  45:BSP/ModbusSS.c ****     if (mbCore->slaveId != GET_DATA(buf, MB_POS_SLAVE_ID))
+  46:BSP/ModbusSS.c ****     {
+  47:BSP/ModbusSS.c ****         return retLenError;
+  48:BSP/ModbusSS.c ****     }
+  49:BSP/ModbusSS.c **** 
+  50:BSP/ModbusSS.c ****     // get func
+  51:BSP/ModbusSS.c ****     uint8_t func = GET_DATA(buf, MB_POS_FUNC);
+  52:BSP/ModbusSS.c **** 
+  53:BSP/ModbusSS.c ****     // get req len
+  54:BSP/ModbusSS.c ****     uint16_t reqLen = 0;
+  55:BSP/ModbusSS.c ****     if (func >= 0x01 && func <= 0x06)
+  56:BSP/ModbusSS.c ****         reqLen = 6;
+  57:BSP/ModbusSS.c ****     else if (func == 0x0F || func == 0x10)
+  58:BSP/ModbusSS.c ****     {
+  59:BSP/ModbusSS.c ****         reqLen = 7 + *(buf + 6);
+  60:BSP/ModbusSS.c ****     }
+  61:BSP/ModbusSS.c ****     else
+  62:BSP/ModbusSS.c ****     {
+  63:BSP/ModbusSS.c ****         return retLenError;
+  64:BSP/ModbusSS.c ****     }
+  65:BSP/ModbusSS.c **** 
+  66:BSP/ModbusSS.c ****     // check Crc
+  67:BSP/ModbusSS.c ****     if (mbCore->rtuTcp == MODBUS_SS_RTU)
+  68:BSP/ModbusSS.c ****     {
+  69:BSP/ModbusSS.c ****         uint16_t readCrc = GET_DATA(buf, reqLen) | (GET_DATA(buf, reqLen+1)<<8);
+  70:BSP/ModbusSS.c ****         uint16_t getCrc = _Crc16(buf, reqLen);
+  71:BSP/ModbusSS.c ****         if (readCrc != getCrc)
+  72:BSP/ModbusSS.c ****         {
+  73:BSP/ModbusSS.c ****             return retLenError;
+  74:BSP/ModbusSS.c ****         }
+  75:BSP/ModbusSS.c ****     }
+  76:BSP/ModbusSS.c **** 
+  77:BSP/ModbusSS.c ****     // cb new req
+  78:BSP/ModbusSS.c ****     if (mbCore->cbNewRequest != NULL)
+  79:BSP/ModbusSS.c ****         mbCore->cbNewRequest();
+  80:BSP/ModbusSS.c **** 
+  81:BSP/ModbusSS.c ****     switch (func)
+  82:BSP/ModbusSS.c ****     {
+  83:BSP/ModbusSS.c ****     case 0x03:
+  84:BSP/ModbusSS.c ****     {
+  85:BSP/ModbusSS.c ****         uint16_t r = GET_WORD(buf, MB_POS_REG);
+  86:BSP/ModbusSS.c ****         uint16_t q = GET_WORD(buf, MB_POS_QUANTITY);
+  87:BSP/ModbusSS.c ****         ModbusSS_table_t *table = getTable(mbCore, func, r, q);
+ARM GAS  C:\Users\sr1\AppData\Local\Temp\ccHJWCCg.s 			page 3
+
+
+  88:BSP/ModbusSS.c ****         if (table == NULL)
+  89:BSP/ModbusSS.c ****         {
+  90:BSP/ModbusSS.c ****             WRITE_WORD(buf + 1, 0, (func | 0x80)<<8 | MB_ERR_RANGE);
+  91:BSP/ModbusSS.c ****             retLenError = 3;
+  92:BSP/ModbusSS.c ****         }
+  93:BSP/ModbusSS.c ****         else
+  94:BSP/ModbusSS.c ****         {
+  95:BSP/ModbusSS.c ****             *(buf + MB_POS_BYTE_CNT) = (uint8_t)q * 2;
+  96:BSP/ModbusSS.c ****             if (mbCore->cbHoldingRequest != NULL)
+  97:BSP/ModbusSS.c ****                 mbCore->cbHoldingRequest(table, r, q);
+  98:BSP/ModbusSS.c ****             for (int i = 0; i < q; i++)
+  99:BSP/ModbusSS.c ****             {
+ 100:BSP/ModbusSS.c ****                 WRITE_WORD(buf + 3, i, ModbusSS_GetWord(table, r + i));
+ 101:BSP/ModbusSS.c ****             }
+ 102:BSP/ModbusSS.c ****             retLenError = q * 2 + 3;
+ 103:BSP/ModbusSS.c ****         }
+ 104:BSP/ModbusSS.c ****     }
+ 105:BSP/ModbusSS.c ****     break;
+ 106:BSP/ModbusSS.c ****     case 0x06:
+ 107:BSP/ModbusSS.c ****     {
+ 108:BSP/ModbusSS.c ****         uint16_t r = GET_WORD(buf, MB_POS_REG);
+ 109:BSP/ModbusSS.c ****         ModbusSS_table_t *table = getTable(mbCore, func, r, 1);
+ 110:BSP/ModbusSS.c ****         if (table == NULL)
+ 111:BSP/ModbusSS.c ****         {
+ 112:BSP/ModbusSS.c ****             WRITE_WORD(buf, MB_POS_FUNC, func | 0x80 | MB_ERR_RANGE << 8);
+ 113:BSP/ModbusSS.c ****             retLenError = 3;
+ 114:BSP/ModbusSS.c ****         }
+ 115:BSP/ModbusSS.c ****         else
+ 116:BSP/ModbusSS.c ****         {
+ 117:BSP/ModbusSS.c ****             asm("NOP");
+ 118:BSP/ModbusSS.c ****             ModbusSS_SetWord(table,r,GET_WORD(buf,4));
+ 119:BSP/ModbusSS.c ****             if (mbCore->cbHoldingUpdate != NULL)
+ 120:BSP/ModbusSS.c ****                 mbCore->cbHoldingUpdate(table, r, 1);
+ 121:BSP/ModbusSS.c ****             retLenError = reqLen;
+ 122:BSP/ModbusSS.c ****             asm("NOP");
+ 123:BSP/ModbusSS.c ****             // if (mbCore->rtuTcp == MODBUS_SS_RTU){
+ 124:BSP/ModbusSS.c **** 
+ 125:BSP/ModbusSS.c **** 
+ 126:BSP/ModbusSS.c ****             // }
+ 127:BSP/ModbusSS.c ****         }
+ 128:BSP/ModbusSS.c ****     }
+ 129:BSP/ModbusSS.c ****     break;
+ 130:BSP/ModbusSS.c ****     default:
+ 131:BSP/ModbusSS.c ****         WRITE_WORD(buf, MB_POS_FUNC, func | 0x80 | MB_ERR_FUNC << 8);
+ 132:BSP/ModbusSS.c ****         retLenError = 3;
+ 133:BSP/ModbusSS.c ****         break;
+ 134:BSP/ModbusSS.c ****     }
+ 135:BSP/ModbusSS.c **** 
+ 136:BSP/ModbusSS.c ****     if (mbCore->rtuTcp == MODBUS_SS_TCP)
+ 137:BSP/ModbusSS.c ****     {
+ 138:BSP/ModbusSS.c ****         WRITE_WORD(buf, -1, retLenError);
+ 139:BSP/ModbusSS.c ****         retLenError += MODBUS_TCP_BUF_OFFSET;
+ 140:BSP/ModbusSS.c ****     }
+ 141:BSP/ModbusSS.c ****     else
+ 142:BSP/ModbusSS.c ****     {
+ 143:BSP/ModbusSS.c ****         uint16_t crc = _Crc16(buf, retLenError);
+ 144:BSP/ModbusSS.c ****         WRITE_DATA(buf,retLenError,(uint8_t)crc);
+ARM GAS  C:\Users\sr1\AppData\Local\Temp\ccHJWCCg.s 			page 4
+
+
+ 145:BSP/ModbusSS.c ****         WRITE_DATA(buf,retLenError+1,(uint8_t)(crc>>8));
+ 146:BSP/ModbusSS.c ****         retLenError += 2;
+ 147:BSP/ModbusSS.c ****         asm("NOP");
+ 148:BSP/ModbusSS.c ****         //mbCore->fpTxFunc(mbCore->bufRxTx,retLenError);
+ 149:BSP/ModbusSS.c ****     }
+ 150:BSP/ModbusSS.c ****     return retLenError;
+ 151:BSP/ModbusSS.c **** }
+ 152:BSP/ModbusSS.c **** 
+ 153:BSP/ModbusSS.c **** __INLINE uint16_t ModbusSS_GetWord(ModbusSS_table_t *table, uint16_t regNo)
+ 154:BSP/ModbusSS.c **** {
+ 155:BSP/ModbusSS.c ****     uint16_t idx = regNo - table->regNo;
+ 156:BSP/ModbusSS.c ****     return *((uint16_t*)table->buf + idx);
+ 157:BSP/ModbusSS.c **** }
+ 158:BSP/ModbusSS.c **** 
+ 159:BSP/ModbusSS.c **** __INLINE void ModbusSS_SetWord(ModbusSS_table_t *table, uint16_t regNo, uint16_t value)
+ 160:BSP/ModbusSS.c **** {
+ 161:BSP/ModbusSS.c ****     // if(regNo < table->regNo || (regNo >= table->regNo + table->quantity)){
+ 162:BSP/ModbusSS.c ****     //     return 0;
+ 163:BSP/ModbusSS.c ****     // }
+ 164:BSP/ModbusSS.c ****     *((uint16_t*)table->buf + regNo - table->regNo) = value;
+ 165:BSP/ModbusSS.c **** }
+ 166:BSP/ModbusSS.c **** 
+ 167:BSP/ModbusSS.c **** __STATIC_INLINE ModbusSS_table_t *getTable(ModbusSS_t *core, uint8_t f, uint16_t r, uint16_t q)
+ 168:BSP/ModbusSS.c **** {
+  29              		.loc 1 168 1 view -0
+  30              		.cfi_startproc
+  31              		@ args = 0, pretend = 0, frame = 0
+  32              		@ frame_needed = 0, uses_anonymous_args = 0
+  33              		.loc 1 168 1 is_stmt 0 view .LVU1
+  34 0000 70B5     		push	{r4, r5, r6, lr}
+  35              	.LCFI0:
+  36              		.cfi_def_cfa_offset 16
+  37              		.cfi_offset 4, -16
+  38              		.cfi_offset 5, -12
+  39              		.cfi_offset 6, -8
+  40              		.cfi_offset 14, -4
+  41 0002 0446     		mov	r4, r0
+ 169:BSP/ModbusSS.c **** 
+ 170:BSP/ModbusSS.c ****     for (int i = 0; i < core->tablesCount; i++)
+  42              		.loc 1 170 5 is_stmt 1 view .LVU2
+  43              	.LBB13:
+  44              		.loc 1 170 10 view .LVU3
+  45              	.LVL1:
+  46              		.loc 1 170 14 is_stmt 0 view .LVU4
+  47 0004 4FF0000E 		mov	lr, #0
+  48              		.loc 1 170 5 view .LVU5
+  49 0008 14E0     		b	.L2
+  50              	.LVL2:
+  51              	.L9:
+  52              	.LBB14:
+ 171:BSP/ModbusSS.c ****     {
+ 172:BSP/ModbusSS.c ****         ModbusSS_table_t *table = core->tables[i];
+ 173:BSP/ModbusSS.c ****         if (table == NULL)
+ 174:BSP/ModbusSS.c ****             return NULL;
+ 175:BSP/ModbusSS.c ****         if (r < table->regNo || r + q - 1 > table->regNo + table->quantity - 1)
+ 176:BSP/ModbusSS.c ****         {
+ 177:BSP/ModbusSS.c ****             continue;
+ARM GAS  C:\Users\sr1\AppData\Local\Temp\ccHJWCCg.s 			page 5
+
+
+ 178:BSP/ModbusSS.c ****         }
+ 179:BSP/ModbusSS.c ****         switch (table->type)
+ 180:BSP/ModbusSS.c ****         {
+ 181:BSP/ModbusSS.c ****         case ModbusSS_Holding:
+ 182:BSP/ModbusSS.c ****             if((f!=0x03)&&(f!=0x06)&&(f!=0x10)) continue;
+  53              		.loc 1 182 13 is_stmt 1 view .LVU6
+  54              		.loc 1 182 15 is_stmt 0 view .LVU7
+  55 000a 0329     		cmp	r1, #3
+  56 000c 06D0     		beq	.L1
+  57              		.loc 1 182 25 discriminator 1 view .LVU8
+  58 000e 0629     		cmp	r1, #6
+  59 0010 04D0     		beq	.L1
+  60              		.loc 1 182 36 discriminator 2 view .LVU9
+  61 0012 1029     		cmp	r1, #16
+  62 0014 02D0     		beq	.L1
+  63 0016 0BE0     		b	.L4
+  64              	.L8:
+ 183:BSP/ModbusSS.c ****             break;
+ 184:BSP/ModbusSS.c ****         case ModbusSS_Input:
+ 185:BSP/ModbusSS.c ****             if(f!=0x04) continue;
+  65              		.loc 1 185 13 is_stmt 1 view .LVU10
+  66              		.loc 1 185 15 is_stmt 0 view .LVU11
+  67 0018 0429     		cmp	r1, #4
+  68 001a 09D1     		bne	.L4
+  69              	.LVL3:
+  70              	.L1:
+  71              		.loc 1 185 15 view .LVU12
+  72              	.LBE14:
+  73              	.LBE13:
+ 186:BSP/ModbusSS.c ****             break;
+ 187:BSP/ModbusSS.c ****         case ModbusSS_Coils:
+ 188:BSP/ModbusSS.c ****             if((f!=0x01)&&(f!=0x05)&&(f!=0x0F)) continue;
+ 189:BSP/ModbusSS.c ****             break;
+ 190:BSP/ModbusSS.c ****         case ModbusSS_DI:
+ 191:BSP/ModbusSS.c ****             if(f!=0x02) continue;
+ 192:BSP/ModbusSS.c ****             break;
+ 193:BSP/ModbusSS.c ****         default:
+ 194:BSP/ModbusSS.c ****             continue;
+ 195:BSP/ModbusSS.c ****             break;
+ 196:BSP/ModbusSS.c ****         }
+ 197:BSP/ModbusSS.c **** 
+ 198:BSP/ModbusSS.c ****         return table;
+ 199:BSP/ModbusSS.c ****     }
+ 200:BSP/ModbusSS.c ****     return NULL;
+ 201:BSP/ModbusSS.c **** }
+  74              		.loc 1 201 1 view .LVU13
+  75 001c 70BD     		pop	{r4, r5, r6, pc}
+  76              	.LVL4:
+  77              	.L7:
+  78              	.LBB17:
+  79              	.LBB15:
+ 188:BSP/ModbusSS.c ****             break;
+  80              		.loc 1 188 13 is_stmt 1 view .LVU14
+ 188:BSP/ModbusSS.c ****             break;
+  81              		.loc 1 188 15 is_stmt 0 view .LVU15
+  82 001e 0129     		cmp	r1, #1
+  83 0020 FCD0     		beq	.L1
+ARM GAS  C:\Users\sr1\AppData\Local\Temp\ccHJWCCg.s 			page 6
+
+
+ 188:BSP/ModbusSS.c ****             break;
+  84              		.loc 1 188 25 discriminator 1 view .LVU16
+  85 0022 0529     		cmp	r1, #5
+  86 0024 FAD0     		beq	.L1
+ 188:BSP/ModbusSS.c ****             break;
+  87              		.loc 1 188 36 discriminator 2 view .LVU17
+  88 0026 0F29     		cmp	r1, #15
+  89 0028 F8D0     		beq	.L1
+  90 002a 01E0     		b	.L4
+  91              	.L5:
+ 191:BSP/ModbusSS.c ****             break;
+  92              		.loc 1 191 13 is_stmt 1 view .LVU18
+ 191:BSP/ModbusSS.c ****             break;
+  93              		.loc 1 191 15 is_stmt 0 view .LVU19
+  94 002c 0229     		cmp	r1, #2
+  95 002e F5D0     		beq	.L1
+  96              	.L4:
+  97              	.LBE15:
+ 170:BSP/ModbusSS.c ****     {
+  98              		.loc 1 170 45 is_stmt 1 discriminator 2 view .LVU20
+  99 0030 0EF1010E 		add	lr, lr, #1
+ 100              	.LVL5:
+ 101              	.L2:
+ 170:BSP/ModbusSS.c ****     {
+ 102              		.loc 1 170 23 discriminator 1 view .LVU21
+ 170:BSP/ModbusSS.c ****     {
+ 103              		.loc 1 170 29 is_stmt 0 discriminator 1 view .LVU22
+ 104 0034 207E     		ldrb	r0, [r4, #24]	@ zero_extendqisi2
+ 170:BSP/ModbusSS.c ****     {
+ 105              		.loc 1 170 23 discriminator 1 view .LVU23
+ 106 0036 7045     		cmp	r0, lr
+ 107 0038 1CDD     		ble	.L13
+ 108              	.LBB16:
+ 172:BSP/ModbusSS.c ****         if (table == NULL)
+ 109              		.loc 1 172 9 is_stmt 1 view .LVU24
+ 172:BSP/ModbusSS.c ****         if (table == NULL)
+ 110              		.loc 1 172 39 is_stmt 0 view .LVU25
+ 111 003a 6069     		ldr	r0, [r4, #20]
+ 172:BSP/ModbusSS.c ****         if (table == NULL)
+ 112              		.loc 1 172 27 view .LVU26
+ 113 003c 50F82E00 		ldr	r0, [r0, lr, lsl #2]
+ 114              	.LVL6:
+ 173:BSP/ModbusSS.c ****             return NULL;
+ 115              		.loc 1 173 9 is_stmt 1 view .LVU27
+ 173:BSP/ModbusSS.c ****             return NULL;
+ 116              		.loc 1 173 12 is_stmt 0 view .LVU28
+ 117 0040 0028     		cmp	r0, #0
+ 118 0042 EBD0     		beq	.L1
+ 175:BSP/ModbusSS.c ****         {
+ 119              		.loc 1 175 9 is_stmt 1 view .LVU29
+ 175:BSP/ModbusSS.c ****         {
+ 120              		.loc 1 175 22 is_stmt 0 view .LVU30
+ 121 0044 B0F800C0 		ldrh	ip, [r0]
+ 175:BSP/ModbusSS.c ****         {
+ 122              		.loc 1 175 12 view .LVU31
+ 123 0048 9445     		cmp	ip, r2
+ 124 004a F1D8     		bhi	.L4
+ARM GAS  C:\Users\sr1\AppData\Local\Temp\ccHJWCCg.s 			page 7
+
+
+ 175:BSP/ModbusSS.c ****         {
+ 125              		.loc 1 175 35 discriminator 2 view .LVU32
+ 126 004c D518     		adds	r5, r2, r3
+ 175:BSP/ModbusSS.c ****         {
+ 127              		.loc 1 175 65 discriminator 2 view .LVU33
+ 128 004e 4688     		ldrh	r6, [r0, #2]
+ 175:BSP/ModbusSS.c ****         {
+ 129              		.loc 1 175 58 discriminator 2 view .LVU34
+ 130 0050 B444     		add	ip, ip, r6
+ 175:BSP/ModbusSS.c ****         {
+ 131              		.loc 1 175 30 discriminator 2 view .LVU35
+ 132 0052 6545     		cmp	r5, ip
+ 133 0054 ECDC     		bgt	.L4
+ 179:BSP/ModbusSS.c ****         {
+ 134              		.loc 1 179 9 is_stmt 1 view .LVU36
+ 179:BSP/ModbusSS.c ****         {
+ 135              		.loc 1 179 22 is_stmt 0 view .LVU37
+ 136 0056 0579     		ldrb	r5, [r0, #4]	@ zero_extendqisi2
+ 179:BSP/ModbusSS.c ****         {
+ 137              		.loc 1 179 9 view .LVU38
+ 138 0058 032D     		cmp	r5, #3
+ 139 005a E9D8     		bhi	.L4
+ 140 005c 01A6     		adr	r6, .L6
+ 141 005e 56F825F0 		ldr	pc, [r6, r5, lsl #2]
+ 142 0062 00BF     		.p2align 2
+ 143              	.L6:
+ 144 0064 0B000000 		.word	.L9+1
+ 145 0068 19000000 		.word	.L8+1
+ 146 006c 1F000000 		.word	.L7+1
+ 147 0070 2D000000 		.word	.L5+1
+ 148              	.LVL7:
+ 149              		.p2align 1
+ 150              	.L13:
+ 179:BSP/ModbusSS.c ****         {
+ 151              		.loc 1 179 9 view .LVU39
+ 152              	.LBE16:
+ 153              	.LBE17:
+ 200:BSP/ModbusSS.c **** }
+ 154              		.loc 1 200 12 view .LVU40
+ 155 0074 0020     		movs	r0, #0
+ 156 0076 D1E7     		b	.L1
+ 157              		.cfi_endproc
+ 158              	.LFE332:
+ 160              		.section	.text._Crc16,"ax",%progbits
+ 161              		.align	1
+ 162              		.syntax unified
+ 163              		.thumb
+ 164              		.thumb_func
+ 166              	_Crc16:
+ 167              	.LVL8:
+ 168              	.LFB333:
+ 202:BSP/ModbusSS.c **** 
+ 203:BSP/ModbusSS.c **** __STATIC_INLINE uint16_t _Crc16(uint8_t *pcBlock, uint16_t len)
+ 204:BSP/ModbusSS.c **** {
+ 169              		.loc 1 204 1 is_stmt 1 view -0
+ 170              		.cfi_startproc
+ 171              		@ args = 0, pretend = 0, frame = 0
+ARM GAS  C:\Users\sr1\AppData\Local\Temp\ccHJWCCg.s 			page 8
+
+
+ 172              		@ frame_needed = 0, uses_anonymous_args = 0
+ 173              		@ link register save eliminated.
+ 205:BSP/ModbusSS.c ****     uint16_t w = 0;
+ 174              		.loc 1 205 5 view .LVU42
+ 206:BSP/ModbusSS.c ****     uint8_t shift_cnt;
+ 175              		.loc 1 206 5 view .LVU43
+ 207:BSP/ModbusSS.c **** 
+ 208:BSP/ModbusSS.c ****     if (pcBlock)
+ 176              		.loc 1 208 5 view .LVU44
+ 177              		.loc 1 208 8 is_stmt 0 view .LVU45
+ 178 0000 8446     		mov	ip, r0
+ 179 0002 10B1     		cbz	r0, .L23
+ 209:BSP/ModbusSS.c ****     {
+ 210:BSP/ModbusSS.c ****         w = 0xffffU;
+ 180              		.loc 1 210 11 view .LVU46
+ 181 0004 4FF6FF70 		movw	r0, #65535
+ 182              	.LVL9:
+ 183              		.loc 1 210 11 view .LVU47
+ 184 0008 0FE0     		b	.L15
+ 185              	.LVL10:
+ 186              	.L23:
+ 187              		.loc 1 210 11 view .LVU48
+ 188 000a 7047     		bx	lr
+ 189              	.LVL11:
+ 190              	.L18:
+ 211:BSP/ModbusSS.c ****         for (; len > 0; len--)
+ 212:BSP/ModbusSS.c ****         {
+ 213:BSP/ModbusSS.c ****             w = (uint16_t)((w / 256U) * 256U + ((w % 256U) ^ (*pcBlock++)));
+ 214:BSP/ModbusSS.c ****             for (shift_cnt = 0; shift_cnt < 8; shift_cnt++)
+ 215:BSP/ModbusSS.c ****             {
+ 216:BSP/ModbusSS.c ****                 if ((w & 0x1) == 1)
+ 217:BSP/ModbusSS.c ****                     w = (uint16_t)((w >> 1) ^ 0xa001U);
+ 218:BSP/ModbusSS.c ****                 else
+ 219:BSP/ModbusSS.c ****                     w >>= 1;
+ 191              		.loc 1 219 21 is_stmt 1 view .LVU49
+ 192              		.loc 1 219 23 is_stmt 0 view .LVU50
+ 193 000c 4008     		lsrs	r0, r0, #1
+ 194              	.LVL12:
+ 195              	.L19:
+ 214:BSP/ModbusSS.c ****             {
+ 196              		.loc 1 214 57 is_stmt 1 discriminator 2 view .LVU51
+ 197 000e 0133     		adds	r3, r3, #1
+ 198              	.LVL13:
+ 214:BSP/ModbusSS.c ****             {
+ 199              		.loc 1 214 57 is_stmt 0 discriminator 2 view .LVU52
+ 200 0010 DBB2     		uxtb	r3, r3
+ 201              	.LVL14:
+ 202              	.L17:
+ 214:BSP/ModbusSS.c ****             {
+ 203              		.loc 1 214 43 is_stmt 1 discriminator 1 view .LVU53
+ 204 0012 072B     		cmp	r3, #7
+ 205 0014 07D8     		bhi	.L24
+ 216:BSP/ModbusSS.c ****                     w = (uint16_t)((w >> 1) ^ 0xa001U);
+ 206              		.loc 1 216 17 view .LVU54
+ 216:BSP/ModbusSS.c ****                     w = (uint16_t)((w >> 1) ^ 0xa001U);
+ 207              		.loc 1 216 20 is_stmt 0 view .LVU55
+ 208 0016 10F0010F 		tst	r0, #1
+ARM GAS  C:\Users\sr1\AppData\Local\Temp\ccHJWCCg.s 			page 9
+
+
+ 209 001a F7D0     		beq	.L18
+ 217:BSP/ModbusSS.c ****                 else
+ 210              		.loc 1 217 21 is_stmt 1 view .LVU56
+ 217:BSP/ModbusSS.c ****                 else
+ 211              		.loc 1 217 23 is_stmt 0 view .LVU57
+ 212 001c 4AF20102 		movw	r2, #40961
+ 213 0020 82EA5000 		eor	r0, r2, r0, lsr #1
+ 214              	.LVL15:
+ 217:BSP/ModbusSS.c ****                 else
+ 215              		.loc 1 217 23 view .LVU58
+ 216 0024 F3E7     		b	.L19
+ 217              	.L24:
+ 211:BSP/ModbusSS.c ****         {
+ 218              		.loc 1 211 28 is_stmt 1 view .LVU59
+ 219 0026 0139     		subs	r1, r1, #1
+ 220              	.LVL16:
+ 211:BSP/ModbusSS.c ****         {
+ 221              		.loc 1 211 28 is_stmt 0 view .LVU60
+ 222 0028 89B2     		uxth	r1, r1
+ 223              	.LVL17:
+ 224              	.L15:
+ 211:BSP/ModbusSS.c ****         {
+ 225              		.loc 1 211 20 is_stmt 1 discriminator 1 view .LVU61
+ 226 002a 49B1     		cbz	r1, .L25
+ 213:BSP/ModbusSS.c ****             for (shift_cnt = 0; shift_cnt < 8; shift_cnt++)
+ 227              		.loc 1 213 13 view .LVU62
+ 213:BSP/ModbusSS.c ****             for (shift_cnt = 0; shift_cnt < 8; shift_cnt++)
+ 228              		.loc 1 213 39 is_stmt 0 view .LVU63
+ 229 002c 00F47F43 		and	r3, r0, #65280
+ 230              	.LVL18:
+ 213:BSP/ModbusSS.c ****             for (shift_cnt = 0; shift_cnt < 8; shift_cnt++)
+ 231              		.loc 1 213 63 view .LVU64
+ 232 0030 1CF8012B 		ldrb	r2, [ip], #1	@ zero_extendqisi2
+ 233              	.LVL19:
+ 213:BSP/ModbusSS.c ****             for (shift_cnt = 0; shift_cnt < 8; shift_cnt++)
+ 234              		.loc 1 213 60 view .LVU65
+ 235 0034 C0B2     		uxtb	r0, r0
+ 236              	.LVL20:
+ 213:BSP/ModbusSS.c ****             for (shift_cnt = 0; shift_cnt < 8; shift_cnt++)
+ 237              		.loc 1 213 60 view .LVU66
+ 238 0036 4240     		eors	r2, r2, r0
+ 213:BSP/ModbusSS.c ****             for (shift_cnt = 0; shift_cnt < 8; shift_cnt++)
+ 239              		.loc 1 213 15 view .LVU67
+ 240 0038 1344     		add	r3, r3, r2
+ 241 003a 98B2     		uxth	r0, r3
+ 242              	.LVL21:
+ 214:BSP/ModbusSS.c ****             {
+ 243              		.loc 1 214 13 is_stmt 1 view .LVU68
+ 214:BSP/ModbusSS.c ****             {
+ 244              		.loc 1 214 28 is_stmt 0 view .LVU69
+ 245 003c 0023     		movs	r3, #0
+ 214:BSP/ModbusSS.c ****             {
+ 246              		.loc 1 214 13 view .LVU70
+ 247 003e E8E7     		b	.L17
+ 248              	.LVL22:
+ 249              	.L25:
+ 220:BSP/ModbusSS.c ****             }
+ARM GAS  C:\Users\sr1\AppData\Local\Temp\ccHJWCCg.s 			page 10
+
+
+ 221:BSP/ModbusSS.c ****         }
+ 222:BSP/ModbusSS.c ****     }
+ 223:BSP/ModbusSS.c ****     return w;
+ 250              		.loc 1 223 5 is_stmt 1 view .LVU71
+ 224:BSP/ModbusSS.c **** }...
+ 251              		.loc 1 224 1 is_stmt 0 view .LVU72
+ 252 0040 7047     		bx	lr
+ 253              		.cfi_endproc
+ 254              	.LFE333:
+ 256              		.section	.text.ModbusSS_ParseRxData,"ax",%progbits
+ 257              		.align	1
+ 258              		.global	ModbusSS_ParseRxData
+ 259              		.syntax unified
+ 260              		.thumb
+ 261              		.thumb_func
+ 263              	ModbusSS_ParseRxData:
+ 264              	.LVL23:
+ 265              	.LFB329:
+  26:BSP/ModbusSS.c **** {
+ 266              		.loc 1 26 1 is_stmt 1 view -0
+ 267              		.cfi_startproc
+ 268              		@ args = 0, pretend = 0, frame = 0
+ 269              		@ frame_needed = 0, uses_anonymous_args = 0
+  27:BSP/ModbusSS.c ****     int32_t retLenError = -1;
+ 270              		.loc 1 27 5 view .LVU74
+  34:BSP/ModbusSS.c ****     if ((mbCore == NULL) || mbCore->bufRxTx == NULL)
+ 271              		.loc 1 34 5 view .LVU75
+  34:BSP/ModbusSS.c ****     if ((mbCore == NULL) || mbCore->bufRxTx == NULL)
+ 272              		.loc 1 34 8 is_stmt 0 view .LVU76
+ 273 0000 0028     		cmp	r0, #0
+ 274 0002 00F0B880 		beq	.L43
+  26:BSP/ModbusSS.c **** {
+ 275              		.loc 1 26 1 discriminator 1 view .LVU77
+ 276 0006 2DE9F047 		push	{r4, r5, r6, r7, r8, r9, r10, lr}
+ 277              	.LCFI1:
+ 278              		.cfi_def_cfa_offset 32
+ 279              		.cfi_offset 4, -32
+ 280              		.cfi_offset 5, -28
+ 281              		.cfi_offset 6, -24
+ 282              		.cfi_offset 7, -20
+ 283              		.cfi_offset 8, -16
+ 284              		.cfi_offset 9, -12
+ 285              		.cfi_offset 10, -8
+ 286              		.cfi_offset 14, -4
+ 287 000a 0646     		mov	r6, r0
+  34:BSP/ModbusSS.c ****     if ((mbCore == NULL) || mbCore->bufRxTx == NULL)
+ 288              		.loc 1 34 35 discriminator 1 view .LVU78
+ 289 000c 0569     		ldr	r5, [r0, #16]
+  34:BSP/ModbusSS.c ****     if ((mbCore == NULL) || mbCore->bufRxTx == NULL)
+ 290              		.loc 1 34 26 discriminator 1 view .LVU79
+ 291 000e 002D     		cmp	r5, #0
+ 292 0010 00F0B480 		beq	.L44
+  39:BSP/ModbusSS.c ****     uint8_t* buf = mbCore->bufRxTx;
+ 293              		.loc 1 39 5 is_stmt 1 view .LVU80
+ 294              	.LVL24:
+  40:BSP/ModbusSS.c ****     if (mbCore->rtuTcp == MODBUS_SS_TCP)
+ 295              		.loc 1 40 5 view .LVU81
+ARM GAS  C:\Users\sr1\AppData\Local\Temp\ccHJWCCg.s 			page 11
+
+
+  40:BSP/ModbusSS.c ****     if (mbCore->rtuTcp == MODBUS_SS_TCP)
+ 296              		.loc 1 40 15 is_stmt 0 view .LVU82
+ 297 0014 027B     		ldrb	r2, [r0, #12]	@ zero_extendqisi2
+  40:BSP/ModbusSS.c ****     if (mbCore->rtuTcp == MODBUS_SS_TCP)
+ 298              		.loc 1 40 8 view .LVU83
+ 299 0016 012A     		cmp	r2, #1
+ 300 0018 14D0     		beq	.L54
+ 301              	.L28:
+  45:BSP/ModbusSS.c ****     if (mbCore->slaveId != GET_DATA(buf, MB_POS_SLAVE_ID))
+ 302              		.loc 1 45 5 is_stmt 1 view .LVU84
+  45:BSP/ModbusSS.c ****     if (mbCore->slaveId != GET_DATA(buf, MB_POS_SLAVE_ID))
+ 303              		.loc 1 45 15 is_stmt 0 view .LVU85
+ 304 001a 717E     		ldrb	r1, [r6, #25]	@ zero_extendqisi2
+  45:BSP/ModbusSS.c ****     if (mbCore->slaveId != GET_DATA(buf, MB_POS_SLAVE_ID))
+ 305              		.loc 1 45 28 view .LVU86
+ 306 001c 2B78     		ldrb	r3, [r5]	@ zero_extendqisi2
+  45:BSP/ModbusSS.c ****     if (mbCore->slaveId != GET_DATA(buf, MB_POS_SLAVE_ID))
+ 307              		.loc 1 45 8 view .LVU87
+ 308 001e 9942     		cmp	r1, r3
+ 309 0020 40F0AF80 		bne	.L45
+  51:BSP/ModbusSS.c ****     uint8_t func = GET_DATA(buf, MB_POS_FUNC);
+ 310              		.loc 1 51 5 is_stmt 1 view .LVU88
+  51:BSP/ModbusSS.c ****     uint8_t func = GET_DATA(buf, MB_POS_FUNC);
+ 311              		.loc 1 51 13 is_stmt 0 view .LVU89
+ 312 0024 95F80190 		ldrb	r9, [r5, #1]	@ zero_extendqisi2
+ 313              	.LVL25:
+  54:BSP/ModbusSS.c ****     uint16_t reqLen = 0;
+ 314              		.loc 1 54 5 is_stmt 1 view .LVU90
+  55:BSP/ModbusSS.c ****     if (func >= 0x01 && func <= 0x06)
+ 315              		.loc 1 55 5 view .LVU91
+  55:BSP/ModbusSS.c ****     if (func >= 0x01 && func <= 0x06)
+ 316              		.loc 1 55 22 is_stmt 0 view .LVU92
+ 317 0028 09F1FF33 		add	r3, r9, #-1
+ 318 002c DBB2     		uxtb	r3, r3
+  55:BSP/ModbusSS.c ****     if (func >= 0x01 && func <= 0x06)
+ 319              		.loc 1 55 8 view .LVU93
+ 320 002e 052B     		cmp	r3, #5
+ 321 0030 0AD9     		bls	.L46
+  57:BSP/ModbusSS.c ****     else if (func == 0x0F || func == 0x10)
+ 322              		.loc 1 57 10 is_stmt 1 view .LVU94
+  57:BSP/ModbusSS.c ****     else if (func == 0x0F || func == 0x10)
+ 323              		.loc 1 57 27 is_stmt 0 view .LVU95
+ 324 0032 A9F10F03 		sub	r3, r9, #15
+ 325 0036 DBB2     		uxtb	r3, r3
+  57:BSP/ModbusSS.c ****     else if (func == 0x0F || func == 0x10)
+ 326              		.loc 1 57 13 view .LVU96
+ 327 0038 012B     		cmp	r3, #1
+ 328 003a 00F2A580 		bhi	.L47
+  59:BSP/ModbusSS.c ****         reqLen = 7 + *(buf + 6);
+ 329              		.loc 1 59 9 is_stmt 1 view .LVU97
+  59:BSP/ModbusSS.c ****         reqLen = 7 + *(buf + 6);
+ 330              		.loc 1 59 22 is_stmt 0 view .LVU98
+ 331 003e AC79     		ldrb	r4, [r5, #6]	@ zero_extendqisi2
+  59:BSP/ModbusSS.c ****         reqLen = 7 + *(buf + 6);
+ 332              		.loc 1 59 16 view .LVU99
+ 333 0040 0734     		adds	r4, r4, #7
+ 334              	.LVL26:
+ARM GAS  C:\Users\sr1\AppData\Local\Temp\ccHJWCCg.s 			page 12
+
+
+  59:BSP/ModbusSS.c ****         reqLen = 7 + *(buf + 6);
+ 335              		.loc 1 59 16 view .LVU100
+ 336 0042 02E0     		b	.L29
+ 337              	.LVL27:
+ 338              	.L54:
+  42:BSP/ModbusSS.c ****         buf += MODBUS_TCP_BUF_OFFSET;
+ 339              		.loc 1 42 9 is_stmt 1 view .LVU101
+  42:BSP/ModbusSS.c ****         buf += MODBUS_TCP_BUF_OFFSET;
+ 340              		.loc 1 42 13 is_stmt 0 view .LVU102
+ 341 0044 0635     		adds	r5, r5, #6
+ 342              	.LVL28:
+  42:BSP/ModbusSS.c ****         buf += MODBUS_TCP_BUF_OFFSET;
+ 343              		.loc 1 42 13 view .LVU103
+ 344 0046 E8E7     		b	.L28
+ 345              	.LVL29:
+ 346              	.L46:
+  56:BSP/ModbusSS.c ****         reqLen = 6;
+ 347              		.loc 1 56 16 view .LVU104
+ 348 0048 0624     		movs	r4, #6
+ 349              	.LVL30:
+ 350              	.L29:
+  67:BSP/ModbusSS.c ****     if (mbCore->rtuTcp == MODBUS_SS_RTU)
+ 351              		.loc 1 67 5 is_stmt 1 view .LVU105
+  67:BSP/ModbusSS.c ****     if (mbCore->rtuTcp == MODBUS_SS_RTU)
+ 352              		.loc 1 67 8 is_stmt 0 view .LVU106
+ 353 004a 5AB9     		cbnz	r2, .L30
+ 354              	.LBB18:
+  69:BSP/ModbusSS.c ****         uint16_t readCrc = GET_DATA(buf, reqLen) | (GET_DATA(buf, reqLen+1)<<8);
+ 355              		.loc 1 69 9 is_stmt 1 view .LVU107
+  69:BSP/ModbusSS.c ****         uint16_t readCrc = GET_DATA(buf, reqLen) | (GET_DATA(buf, reqLen+1)<<8);
+ 356              		.loc 1 69 28 is_stmt 0 view .LVU108
+ 357 004c 2F5D     		ldrb	r7, [r5, r4]	@ zero_extendqisi2
+  69:BSP/ModbusSS.c ****         uint16_t readCrc = GET_DATA(buf, reqLen) | (GET_DATA(buf, reqLen+1)<<8);
+ 358              		.loc 1 69 53 view .LVU109
+ 359 004e 631C     		adds	r3, r4, #1
+ 360 0050 EB5C     		ldrb	r3, [r5, r3]	@ zero_extendqisi2
+  69:BSP/ModbusSS.c ****         uint16_t readCrc = GET_DATA(buf, reqLen) | (GET_DATA(buf, reqLen+1)<<8);
+ 361              		.loc 1 69 18 view .LVU110
+ 362 0052 47EA0327 		orr	r7, r7, r3, lsl #8
+ 363              	.LVL31:
+  70:BSP/ModbusSS.c ****         uint16_t getCrc = _Crc16(buf, reqLen);
+ 364              		.loc 1 70 9 is_stmt 1 view .LVU111
+  70:BSP/ModbusSS.c ****         uint16_t getCrc = _Crc16(buf, reqLen);
+ 365              		.loc 1 70 27 is_stmt 0 view .LVU112
+ 366 0056 2146     		mov	r1, r4
+ 367 0058 2846     		mov	r0, r5
+ 368              	.LVL32:
+  70:BSP/ModbusSS.c ****         uint16_t getCrc = _Crc16(buf, reqLen);
+ 369              		.loc 1 70 27 view .LVU113
+ 370 005a FFF7FEFF 		bl	_Crc16
+ 371              	.LVL33:
+  71:BSP/ModbusSS.c ****         if (readCrc != getCrc)
+ 372              		.loc 1 71 9 is_stmt 1 view .LVU114
+  71:BSP/ModbusSS.c ****         if (readCrc != getCrc)
+ 373              		.loc 1 71 12 is_stmt 0 view .LVU115
+ 374 005e 8742     		cmp	r7, r0
+ 375 0060 40F09580 		bne	.L48
+ARM GAS  C:\Users\sr1\AppData\Local\Temp\ccHJWCCg.s 			page 13
+
+
+ 376              	.LVL34:
+ 377              	.L30:
+  71:BSP/ModbusSS.c ****         if (readCrc != getCrc)
+ 378              		.loc 1 71 12 view .LVU116
+ 379              	.LBE18:
+  78:BSP/ModbusSS.c ****     if (mbCore->cbNewRequest != NULL)
+ 380              		.loc 1 78 5 is_stmt 1 view .LVU117
+  78:BSP/ModbusSS.c ****     if (mbCore->cbNewRequest != NULL)
+ 381              		.loc 1 78 15 is_stmt 0 view .LVU118
+ 382 0064 3368     		ldr	r3, [r6]
+  78:BSP/ModbusSS.c ****     if (mbCore->cbNewRequest != NULL)
+ 383              		.loc 1 78 8 view .LVU119
+ 384 0066 03B1     		cbz	r3, .L31
+  79:BSP/ModbusSS.c ****         mbCore->cbNewRequest();
+ 385              		.loc 1 79 9 is_stmt 1 view .LVU120
+ 386 0068 9847     		blx	r3
+ 387              	.LVL35:
+ 388              	.L31:
+  81:BSP/ModbusSS.c ****     switch (func)
+ 389              		.loc 1 81 5 view .LVU121
+ 390 006a B9F1030F 		cmp	r9, #3
+ 391 006e 19D0     		beq	.L32
+ 392 0070 B9F1060F 		cmp	r9, #6
+ 393 0074 4FD0     		beq	.L33
+ 131:BSP/ModbusSS.c ****         WRITE_WORD(buf, MB_POS_FUNC, func | 0x80 | MB_ERR_FUNC << 8);
+ 394              		.loc 1 131 9 view .LVU122
+ 395 0076 49F08003 		orr	r3, r9, #128
+ 396 007a 1B02     		lsls	r3, r3, #8
+ 397 007c 43F00103 		orr	r3, r3, #1
+ 398 0080 6B80     		strh	r3, [r5, #2]	@ movhi
+ 132:BSP/ModbusSS.c ****         retLenError = 3;
+ 399              		.loc 1 132 9 view .LVU123
+ 400              	.LVL36:
+ 133:BSP/ModbusSS.c ****         break;
+ 401              		.loc 1 133 9 view .LVU124
+ 132:BSP/ModbusSS.c ****         retLenError = 3;
+ 402              		.loc 1 132 21 is_stmt 0 view .LVU125
+ 403 0082 0324     		movs	r4, #3
+ 404              	.LVL37:
+ 405              	.L36:
+ 136:BSP/ModbusSS.c ****     if (mbCore->rtuTcp == MODBUS_SS_TCP)
+ 406              		.loc 1 136 5 is_stmt 1 view .LVU126
+ 136:BSP/ModbusSS.c ****     if (mbCore->rtuTcp == MODBUS_SS_TCP)
+ 407              		.loc 1 136 15 is_stmt 0 view .LVU127
+ 408 0084 337B     		ldrb	r3, [r6, #12]	@ zero_extendqisi2
+ 136:BSP/ModbusSS.c ****     if (mbCore->rtuTcp == MODBUS_SS_TCP)
+ 409              		.loc 1 136 8 view .LVU128
+ 410 0086 012B     		cmp	r3, #1
+ 411 0088 6ED0     		beq	.L55
+ 412              	.LBB19:
+ 143:BSP/ModbusSS.c ****         uint16_t crc = _Crc16(buf, retLenError);
+ 413              		.loc 1 143 9 is_stmt 1 view .LVU129
+ 143:BSP/ModbusSS.c ****         uint16_t crc = _Crc16(buf, retLenError);
+ 414              		.loc 1 143 24 is_stmt 0 view .LVU130
+ 415 008a A1B2     		uxth	r1, r4
+ 416 008c 2846     		mov	r0, r5
+ 417 008e FFF7FEFF 		bl	_Crc16
+ARM GAS  C:\Users\sr1\AppData\Local\Temp\ccHJWCCg.s 			page 14
+
+
+ 418              	.LVL38:
+ 144:BSP/ModbusSS.c ****         WRITE_DATA(buf,retLenError,(uint8_t)crc);
+ 419              		.loc 1 144 9 is_stmt 1 view .LVU131
+ 420 0092 2855     		strb	r0, [r5, r4]
+ 145:BSP/ModbusSS.c ****         WRITE_DATA(buf,retLenError+1,(uint8_t)(crc>>8));
+ 421              		.loc 1 145 9 view .LVU132
+ 422 0094 631C     		adds	r3, r4, #1
+ 423 0096 C0F30720 		ubfx	r0, r0, #8, #8
+ 424              	.LVL39:
+ 145:BSP/ModbusSS.c ****         WRITE_DATA(buf,retLenError+1,(uint8_t)(crc>>8));
+ 425              		.loc 1 145 9 is_stmt 0 view .LVU133
+ 426 009a E854     		strb	r0, [r5, r3]
+ 146:BSP/ModbusSS.c ****         retLenError += 2;
+ 427              		.loc 1 146 9 is_stmt 1 view .LVU134
+ 146:BSP/ModbusSS.c ****         retLenError += 2;
+ 428              		.loc 1 146 21 is_stmt 0 view .LVU135
+ 429 009c A01C     		adds	r0, r4, #2
+ 430              	.LVL40:
+ 147:BSP/ModbusSS.c ****         asm("NOP");
+ 431              		.loc 1 147 9 is_stmt 1 view .LVU136
+ 432              		.syntax unified
+ 433              	@ 147 "BSP/ModbusSS.c" 1
+ 434 009e 00BF     		NOP
+ 435              	@ 0 "" 2
+ 436              	.LVL41:
+ 437              		.thumb
+ 438              		.syntax unified
+ 439              	.L26:
+ 147:BSP/ModbusSS.c ****         asm("NOP");
+ 440              		.loc 1 147 9 is_stmt 0 view .LVU137
+ 441              	.LBE19:
+ 151:BSP/ModbusSS.c **** }
+ 442              		.loc 1 151 1 view .LVU138
+ 443 00a0 BDE8F087 		pop	{r4, r5, r6, r7, r8, r9, r10, pc}
+ 444              	.LVL42:
+ 445              	.L32:
+ 446              	.LBB20:
+  85:BSP/ModbusSS.c ****         uint16_t r = GET_WORD(buf, MB_POS_REG);
+ 447              		.loc 1 85 9 is_stmt 1 view .LVU139
+  85:BSP/ModbusSS.c ****         uint16_t r = GET_WORD(buf, MB_POS_REG);
+ 448              		.loc 1 85 22 is_stmt 0 view .LVU140
+ 449 00a4 95F80380 		ldrb	r8, [r5, #3]	@ zero_extendqisi2
+ 450 00a8 AB78     		ldrb	r3, [r5, #2]	@ zero_extendqisi2
+  85:BSP/ModbusSS.c ****         uint16_t r = GET_WORD(buf, MB_POS_REG);
+ 451              		.loc 1 85 18 view .LVU141
+ 452 00aa 48EA0328 		orr	r8, r8, r3, lsl #8
+ 453              	.LVL43:
+  86:BSP/ModbusSS.c ****         uint16_t q = GET_WORD(buf, MB_POS_QUANTITY);
+ 454              		.loc 1 86 9 is_stmt 1 view .LVU142
+  86:BSP/ModbusSS.c ****         uint16_t q = GET_WORD(buf, MB_POS_QUANTITY);
+ 455              		.loc 1 86 22 is_stmt 0 view .LVU143
+ 456 00ae 6C79     		ldrb	r4, [r5, #5]	@ zero_extendqisi2
+ 457              	.LVL44:
+  86:BSP/ModbusSS.c ****         uint16_t q = GET_WORD(buf, MB_POS_QUANTITY);
+ 458              		.loc 1 86 22 view .LVU144
+ 459 00b0 2B79     		ldrb	r3, [r5, #4]	@ zero_extendqisi2
+ 460 00b2 44EA0324 		orr	r4, r4, r3, lsl #8
+ARM GAS  C:\Users\sr1\AppData\Local\Temp\ccHJWCCg.s 			page 15
+
+
+ 461 00b6 0FFA84FA 		sxth	r10, r4
+ 462              	.LVL45:
+  87:BSP/ModbusSS.c ****         ModbusSS_table_t *table = getTable(mbCore, func, r, q);
+ 463              		.loc 1 87 9 is_stmt 1 view .LVU145
+  87:BSP/ModbusSS.c ****         ModbusSS_table_t *table = getTable(mbCore, func, r, q);
+ 464              		.loc 1 87 35 is_stmt 0 view .LVU146
+ 465 00ba 2346     		mov	r3, r4
+ 466 00bc 4246     		mov	r2, r8
+ 467 00be 4946     		mov	r1, r9
+ 468 00c0 3046     		mov	r0, r6
+ 469 00c2 FFF7FEFF 		bl	getTable
+ 470              	.LVL46:
+  88:BSP/ModbusSS.c ****         if (table == NULL)
+ 471              		.loc 1 88 9 is_stmt 1 view .LVU147
+  88:BSP/ModbusSS.c ****         if (table == NULL)
+ 472              		.loc 1 88 12 is_stmt 0 view .LVU148
+ 473 00c6 0746     		mov	r7, r0
+ 474 00c8 50B1     		cbz	r0, .L56
+  95:BSP/ModbusSS.c ****             *(buf + MB_POS_BYTE_CNT) = (uint8_t)q * 2;
+ 475              		.loc 1 95 13 is_stmt 1 view .LVU149
+  95:BSP/ModbusSS.c ****             *(buf + MB_POS_BYTE_CNT) = (uint8_t)q * 2;
+ 476              		.loc 1 95 38 is_stmt 0 view .LVU150
+ 477 00ca 4FEA4A0A 		lsl	r10, r10, #1
+ 478 00ce 85F802A0 		strb	r10, [r5, #2]
+  96:BSP/ModbusSS.c ****             if (mbCore->cbHoldingRequest != NULL)
+ 479              		.loc 1 96 13 is_stmt 1 view .LVU151
+  96:BSP/ModbusSS.c ****             if (mbCore->cbHoldingRequest != NULL)
+ 480              		.loc 1 96 23 is_stmt 0 view .LVU152
+ 481 00d2 B368     		ldr	r3, [r6, #8]
+  96:BSP/ModbusSS.c ****             if (mbCore->cbHoldingRequest != NULL)
+ 482              		.loc 1 96 16 view .LVU153
+ 483 00d4 13B1     		cbz	r3, .L37
+  97:BSP/ModbusSS.c ****                 mbCore->cbHoldingRequest(table, r, q);
+ 484              		.loc 1 97 17 is_stmt 1 view .LVU154
+ 485 00d6 2246     		mov	r2, r4
+ 486 00d8 4146     		mov	r1, r8
+ 487 00da 9847     		blx	r3
+ 488              	.LVL47:
+ 489              	.L37:
+  97:BSP/ModbusSS.c ****                 mbCore->cbHoldingRequest(table, r, q);
+ 490              		.loc 1 97 17 is_stmt 0 view .LVU155
+ 491              	.LBE20:
+  56:BSP/ModbusSS.c ****         reqLen = 6;
+ 492              		.loc 1 56 16 discriminator 1 view .LVU156
+ 493 00dc 0021     		movs	r1, #0
+ 494 00de 15E0     		b	.L38
+ 495              	.LVL48:
+ 496              	.L56:
+ 497              	.LBB24:
+  90:BSP/ModbusSS.c ****             WRITE_WORD(buf + 1, 0, (func | 0x80)<<8 | MB_ERR_RANGE);
+ 498              		.loc 1 90 13 is_stmt 1 view .LVU157
+ 499 00e0 49F42073 		orr	r3, r9, #640
+ 500 00e4 A5F80130 		strh	r3, [r5, #1]	@ movhi
+  91:BSP/ModbusSS.c ****             retLenError = 3;
+ 501              		.loc 1 91 13 view .LVU158
+ 502              	.LVL49:
+  91:BSP/ModbusSS.c ****             retLenError = 3;
+ARM GAS  C:\Users\sr1\AppData\Local\Temp\ccHJWCCg.s 			page 16
+
+
+ 503              		.loc 1 91 25 is_stmt 0 view .LVU159
+ 504 00e8 0324     		movs	r4, #3
+ 505              	.LVL50:
+  91:BSP/ModbusSS.c ****             retLenError = 3;
+ 506              		.loc 1 91 25 view .LVU160
+ 507 00ea CBE7     		b	.L36
+ 508              	.LVL51:
+ 509              	.L39:
+ 510              	.LBB21:
+ 100:BSP/ModbusSS.c ****                 WRITE_WORD(buf + 3, i, ModbusSS_GetWord(table, r + i));
+ 511              		.loc 1 100 17 is_stmt 1 discriminator 3 view .LVU161
+ 512 00ec 08EB0103 		add	r3, r8, r1
+ 513 00f0 9BB2     		uxth	r3, r3
+ 514              	.LVL52:
+ 515              	.LBB22:
+ 516              	.LBI22:
+ 153:BSP/ModbusSS.c **** __INLINE uint16_t ModbusSS_GetWord(ModbusSS_table_t *table, uint16_t regNo)
+ 517              		.loc 1 153 19 discriminator 3 view .LVU162
+ 518              	.LBB23:
+ 155:BSP/ModbusSS.c ****     uint16_t idx = regNo - table->regNo;
+ 519              		.loc 1 155 5 discriminator 3 view .LVU163
+ 155:BSP/ModbusSS.c ****     uint16_t idx = regNo - table->regNo;
+ 520              		.loc 1 155 33 is_stmt 0 discriminator 3 view .LVU164
+ 521 00f2 3A88     		ldrh	r2, [r7]
+ 155:BSP/ModbusSS.c ****     uint16_t idx = regNo - table->regNo;
+ 522              		.loc 1 155 14 discriminator 3 view .LVU165
+ 523 00f4 9B1A     		subs	r3, r3, r2
+ 524              	.LVL53:
+ 155:BSP/ModbusSS.c ****     uint16_t idx = regNo - table->regNo;
+ 525              		.loc 1 155 14 discriminator 3 view .LVU166
+ 526 00f6 9BB2     		uxth	r3, r3
+ 527              	.LVL54:
+ 156:BSP/ModbusSS.c ****     return *((uint16_t*)table->buf + idx);
+ 528              		.loc 1 156 5 is_stmt 1 discriminator 3 view .LVU167
+ 156:BSP/ModbusSS.c ****     return *((uint16_t*)table->buf + idx);
+ 529              		.loc 1 156 30 is_stmt 0 discriminator 3 view .LVU168
+ 530 00f8 BA68     		ldr	r2, [r7, #8]
+ 156:BSP/ModbusSS.c ****     return *((uint16_t*)table->buf + idx);
+ 531              		.loc 1 156 12 discriminator 3 view .LVU169
+ 532 00fa 32F81300 		ldrh	r0, [r2, r3, lsl #1]
+ 533              	.LVL55:
+ 156:BSP/ModbusSS.c ****     return *((uint16_t*)table->buf + idx);
+ 534              		.loc 1 156 12 discriminator 3 view .LVU170
+ 535              	.LBE23:
+ 536              	.LBE22:
+ 100:BSP/ModbusSS.c ****                 WRITE_WORD(buf + 3, i, ModbusSS_GetWord(table, r + i));
+ 537              		.loc 1 100 17 discriminator 3 view .LVU171
+ 538 00fe 4B00     		lsls	r3, r1, #1
+ 539 0100 0333     		adds	r3, r3, #3
+ 540 0102 020A     		lsrs	r2, r0, #8
+ 541 0104 42EA0022 		orr	r2, r2, r0, lsl #8
+ 542 0108 EA52     		strh	r2, [r5, r3]	@ movhi
+  98:BSP/ModbusSS.c ****             for (int i = 0; i < q; i++)
+ 543              		.loc 1 98 37 is_stmt 1 discriminator 3 view .LVU172
+ 544 010a 0131     		adds	r1, r1, #1
+ 545              	.LVL56:
+ 546              	.L38:
+ARM GAS  C:\Users\sr1\AppData\Local\Temp\ccHJWCCg.s 			page 17
+
+
+  98:BSP/ModbusSS.c ****             for (int i = 0; i < q; i++)
+ 547              		.loc 1 98 31 discriminator 1 view .LVU173
+ 548 010c 8C42     		cmp	r4, r1
+ 549 010e EDDC     		bgt	.L39
+ 550              	.LBE21:
+ 102:BSP/ModbusSS.c ****             retLenError = q * 2 + 3;
+ 551              		.loc 1 102 13 view .LVU174
+ 102:BSP/ModbusSS.c ****             retLenError = q * 2 + 3;
+ 552              		.loc 1 102 29 is_stmt 0 view .LVU175
+ 553 0110 6400     		lsls	r4, r4, #1
+ 554              	.LVL57:
+ 102:BSP/ModbusSS.c ****             retLenError = q * 2 + 3;
+ 555              		.loc 1 102 25 view .LVU176
+ 556 0112 0334     		adds	r4, r4, #3
+ 557              	.LVL58:
+ 102:BSP/ModbusSS.c ****             retLenError = q * 2 + 3;
+ 558              		.loc 1 102 25 view .LVU177
+ 559 0114 B6E7     		b	.L36
+ 560              	.LVL59:
+ 561              	.L33:
+ 102:BSP/ModbusSS.c ****             retLenError = q * 2 + 3;
+ 562              		.loc 1 102 25 view .LVU178
+ 563              	.LBE24:
+ 564              	.LBB25:
+ 108:BSP/ModbusSS.c ****         uint16_t r = GET_WORD(buf, MB_POS_REG);
+ 565              		.loc 1 108 9 is_stmt 1 view .LVU179
+ 108:BSP/ModbusSS.c ****         uint16_t r = GET_WORD(buf, MB_POS_REG);
+ 566              		.loc 1 108 22 is_stmt 0 view .LVU180
+ 567 0116 EF78     		ldrb	r7, [r5, #3]	@ zero_extendqisi2
+ 568 0118 AB78     		ldrb	r3, [r5, #2]	@ zero_extendqisi2
+ 108:BSP/ModbusSS.c ****         uint16_t r = GET_WORD(buf, MB_POS_REG);
+ 569              		.loc 1 108 18 view .LVU181
+ 570 011a 47EA0327 		orr	r7, r7, r3, lsl #8
+ 571              	.LVL60:
+ 109:BSP/ModbusSS.c ****         ModbusSS_table_t *table = getTable(mbCore, func, r, 1);
+ 572              		.loc 1 109 9 is_stmt 1 view .LVU182
+ 109:BSP/ModbusSS.c ****         ModbusSS_table_t *table = getTable(mbCore, func, r, 1);
+ 573              		.loc 1 109 35 is_stmt 0 view .LVU183
+ 574 011e 0123     		movs	r3, #1
+ 575 0120 3A46     		mov	r2, r7
+ 576 0122 4946     		mov	r1, r9
+ 577 0124 3046     		mov	r0, r6
+ 578 0126 FFF7FEFF 		bl	getTable
+ 579              	.LVL61:
+ 110:BSP/ModbusSS.c ****         if (table == NULL)
+ 580              		.loc 1 110 9 is_stmt 1 view .LVU184
+ 110:BSP/ModbusSS.c ****         if (table == NULL)
+ 581              		.loc 1 110 12 is_stmt 0 view .LVU185
+ 582 012a 0346     		mov	r3, r0
+ 583 012c A0B1     		cbz	r0, .L57
+ 117:BSP/ModbusSS.c ****             asm("NOP");
+ 584              		.loc 1 117 13 is_stmt 1 view .LVU186
+ 585              		.syntax unified
+ 586              	@ 117 "BSP/ModbusSS.c" 1
+ 587 012e 00BF     		NOP
+ 588              	@ 0 "" 2
+ 118:BSP/ModbusSS.c ****             ModbusSS_SetWord(table,r,GET_WORD(buf,4));
+ARM GAS  C:\Users\sr1\AppData\Local\Temp\ccHJWCCg.s 			page 18
+
+
+ 589              		.loc 1 118 13 view .LVU187
+ 118:BSP/ModbusSS.c ****             ModbusSS_SetWord(table,r,GET_WORD(buf,4));
+ 590              		.loc 1 118 38 is_stmt 0 view .LVU188
+ 591              		.thumb
+ 592              		.syntax unified
+ 593 0130 6879     		ldrb	r0, [r5, #5]	@ zero_extendqisi2
+ 594              	.LVL62:
+ 118:BSP/ModbusSS.c ****             ModbusSS_SetWord(table,r,GET_WORD(buf,4));
+ 595              		.loc 1 118 38 view .LVU189
+ 596 0132 2A79     		ldrb	r2, [r5, #4]	@ zero_extendqisi2
+ 118:BSP/ModbusSS.c ****             ModbusSS_SetWord(table,r,GET_WORD(buf,4));
+ 597              		.loc 1 118 13 view .LVU190
+ 598 0134 40EA0220 		orr	r0, r0, r2, lsl #8
+ 599              	.LVL63:
+ 600              	.LBB26:
+ 601              	.LBI26:
+ 159:BSP/ModbusSS.c **** __INLINE void ModbusSS_SetWord(ModbusSS_table_t *table, uint16_t regNo, uint16_t value)
+ 602              		.loc 1 159 15 is_stmt 1 view .LVU191
+ 603              	.LBB27:
+ 164:BSP/ModbusSS.c ****     *((uint16_t*)table->buf + regNo - table->regNo) = value;
+ 604              		.loc 1 164 5 view .LVU192
+ 164:BSP/ModbusSS.c ****     *((uint16_t*)table->buf + regNo - table->regNo) = value;
+ 605              		.loc 1 164 23 is_stmt 0 view .LVU193
+ 606 0138 9968     		ldr	r1, [r3, #8]
+ 164:BSP/ModbusSS.c ****     *((uint16_t*)table->buf + regNo - table->regNo) = value;
+ 607              		.loc 1 164 44 view .LVU194
+ 608 013a 1A88     		ldrh	r2, [r3]
+ 164:BSP/ModbusSS.c ****     *((uint16_t*)table->buf + regNo - table->regNo) = value;
+ 609              		.loc 1 164 37 view .LVU195
+ 610 013c BA1A     		subs	r2, r7, r2
+ 164:BSP/ModbusSS.c ****     *((uint16_t*)table->buf + regNo - table->regNo) = value;
+ 611              		.loc 1 164 53 view .LVU196
+ 612 013e 21F81200 		strh	r0, [r1, r2, lsl #1]	@ movhi
+ 613              	.LVL64:
+ 164:BSP/ModbusSS.c ****     *((uint16_t*)table->buf + regNo - table->regNo) = value;
+ 614              		.loc 1 164 53 view .LVU197
+ 615              	.LBE27:
+ 616              	.LBE26:
+ 119:BSP/ModbusSS.c ****             if (mbCore->cbHoldingUpdate != NULL)
+ 617              		.loc 1 119 13 is_stmt 1 view .LVU198
+ 119:BSP/ModbusSS.c ****             if (mbCore->cbHoldingUpdate != NULL)
+ 618              		.loc 1 119 23 is_stmt 0 view .LVU199
+ 619 0142 D6F80480 		ldr	r8, [r6, #4]
+ 119:BSP/ModbusSS.c ****             if (mbCore->cbHoldingUpdate != NULL)
+ 620              		.loc 1 119 16 view .LVU200
+ 621 0146 B8F1000F 		cmp	r8, #0
+ 622 014a 03D0     		beq	.L41
+ 120:BSP/ModbusSS.c ****                 mbCore->cbHoldingUpdate(table, r, 1);
+ 623              		.loc 1 120 17 is_stmt 1 view .LVU201
+ 624 014c 0122     		movs	r2, #1
+ 625 014e 3946     		mov	r1, r7
+ 626 0150 1846     		mov	r0, r3
+ 627 0152 C047     		blx	r8
+ 628              	.LVL65:
+ 629              	.L41:
+ 121:BSP/ModbusSS.c ****             retLenError = reqLen;
+ 630              		.loc 1 121 13 view .LVU202
+ARM GAS  C:\Users\sr1\AppData\Local\Temp\ccHJWCCg.s 			page 19
+
+
+ 122:BSP/ModbusSS.c ****             asm("NOP");
+ 631              		.loc 1 122 13 view .LVU203
+ 632              		.syntax unified
+ 633              	@ 122 "BSP/ModbusSS.c" 1
+ 634 0154 00BF     		NOP
+ 635              	@ 0 "" 2
+ 636              		.thumb
+ 637              		.syntax unified
+ 638 0156 95E7     		b	.L36
+ 639              	.LVL66:
+ 640              	.L57:
+ 112:BSP/ModbusSS.c ****             WRITE_WORD(buf, MB_POS_FUNC, func | 0x80 | MB_ERR_RANGE << 8);
+ 641              		.loc 1 112 13 view .LVU204
+ 642 0158 49F08003 		orr	r3, r9, #128
+ 643 015c 1B02     		lsls	r3, r3, #8
+ 644 015e 43F00203 		orr	r3, r3, #2
+ 645 0162 6B80     		strh	r3, [r5, #2]	@ movhi
+ 113:BSP/ModbusSS.c ****             retLenError = 3;
+ 646              		.loc 1 113 13 view .LVU205
+ 647              	.LVL67:
+ 113:BSP/ModbusSS.c ****             retLenError = 3;
+ 648              		.loc 1 113 25 is_stmt 0 view .LVU206
+ 649 0164 0324     		movs	r4, #3
+ 650              	.LVL68:
+ 113:BSP/ModbusSS.c ****             retLenError = 3;
+ 651              		.loc 1 113 25 view .LVU207
+ 652 0166 8DE7     		b	.L36
+ 653              	.LVL69:
+ 654              	.L55:
+ 113:BSP/ModbusSS.c ****             retLenError = 3;
+ 655              		.loc 1 113 25 view .LVU208
+ 656              	.LBE25:
+ 138:BSP/ModbusSS.c ****         WRITE_WORD(buf, -1, retLenError);
+ 657              		.loc 1 138 9 is_stmt 1 view .LVU209
+ 658 0168 2302     		lsls	r3, r4, #8
+ 659 016a 43EA2423 		orr	r3, r3, r4, asr #8
+ 660 016e 25F8023C 		strh	r3, [r5, #-2]	@ movhi
+ 139:BSP/ModbusSS.c ****         retLenError += MODBUS_TCP_BUF_OFFSET;
+ 661              		.loc 1 139 9 view .LVU210
+ 139:BSP/ModbusSS.c ****         retLenError += MODBUS_TCP_BUF_OFFSET;
+ 662              		.loc 1 139 21 is_stmt 0 view .LVU211
+ 663 0172 A01D     		adds	r0, r4, #6
+ 664              	.LVL70:
+ 139:BSP/ModbusSS.c ****         retLenError += MODBUS_TCP_BUF_OFFSET;
+ 665              		.loc 1 139 21 view .LVU212
+ 666 0174 94E7     		b	.L26
+ 667              	.LVL71:
+ 668              	.L43:
+ 669              	.LCFI2:
+ 670              		.cfi_def_cfa_offset 0
+ 671              		.cfi_restore 4
+ 672              		.cfi_restore 5
+ 673              		.cfi_restore 6
+ 674              		.cfi_restore 7
+ 675              		.cfi_restore 8
+ 676              		.cfi_restore 9
+ 677              		.cfi_restore 10
+ARM GAS  C:\Users\sr1\AppData\Local\Temp\ccHJWCCg.s 			page 20
+
+
+ 678              		.cfi_restore 14
+  36:BSP/ModbusSS.c ****         return retLenError;
+ 679              		.loc 1 36 16 view .LVU213
+ 680 0176 4FF0FF30 		mov	r0, #-1
+ 681              	.LVL72:
+ 151:BSP/ModbusSS.c **** }
+ 682              		.loc 1 151 1 view .LVU214
+ 683 017a 7047     		bx	lr
+ 684              	.LVL73:
+ 685              	.L44:
+ 686              	.LCFI3:
+ 687              		.cfi_def_cfa_offset 32
+ 688              		.cfi_offset 4, -32
+ 689              		.cfi_offset 5, -28
+ 690              		.cfi_offset 6, -24
+ 691              		.cfi_offset 7, -20
+ 692              		.cfi_offset 8, -16
+ 693              		.cfi_offset 9, -12
+ 694              		.cfi_offset 10, -8
+ 695              		.cfi_offset 14, -4
+  36:BSP/ModbusSS.c ****         return retLenError;
+ 696              		.loc 1 36 16 view .LVU215
+ 697 017c 4FF0FF30 		mov	r0, #-1
+ 698              	.LVL74:
+  36:BSP/ModbusSS.c ****         return retLenError;
+ 699              		.loc 1 36 16 view .LVU216
+ 700 0180 8EE7     		b	.L26
+ 701              	.LVL75:
+ 702              	.L45:
+  47:BSP/ModbusSS.c ****         return retLenError;
+ 703              		.loc 1 47 16 view .LVU217
+ 704 0182 4FF0FF30 		mov	r0, #-1
+ 705              	.LVL76:
+  47:BSP/ModbusSS.c ****         return retLenError;
+ 706              		.loc 1 47 16 view .LVU218
+ 707 0186 8BE7     		b	.L26
+ 708              	.LVL77:
+ 709              	.L47:
+  63:BSP/ModbusSS.c ****         return retLenError;
+ 710              		.loc 1 63 16 view .LVU219
+ 711 0188 4FF0FF30 		mov	r0, #-1
+ 712              	.LVL78:
+  63:BSP/ModbusSS.c ****         return retLenError;
+ 713              		.loc 1 63 16 view .LVU220
+ 714 018c 88E7     		b	.L26
+ 715              	.LVL79:
+ 716              	.L48:
+ 717              	.LBB28:
+  73:BSP/ModbusSS.c ****             return retLenError;
+ 718              		.loc 1 73 20 view .LVU221
+ 719 018e 4FF0FF30 		mov	r0, #-1
+ 720              	.LVL80:
+  73:BSP/ModbusSS.c ****             return retLenError;
+ 721              		.loc 1 73 20 view .LVU222
+ 722 0192 85E7     		b	.L26
+ 723              	.LBE28:
+ 724              		.cfi_endproc
+ARM GAS  C:\Users\sr1\AppData\Local\Temp\ccHJWCCg.s 			page 21
+
+
+ 725              	.LFE329:
+ 727              		.section	.text.ModbusSS_GetWord,"ax",%progbits
+ 728              		.align	1
+ 729              		.global	ModbusSS_GetWord
+ 730              		.syntax unified
+ 731              		.thumb
+ 732              		.thumb_func
+ 734              	ModbusSS_GetWord:
+ 735              	.LVL81:
+ 736              	.LFB330:
+ 154:BSP/ModbusSS.c **** {
+ 737              		.loc 1 154 1 is_stmt 1 view -0
+ 738              		.cfi_startproc
+ 739              		@ args = 0, pretend = 0, frame = 0
+ 740              		@ frame_needed = 0, uses_anonymous_args = 0
+ 741              		@ link register save eliminated.
+ 155:BSP/ModbusSS.c ****     uint16_t idx = regNo - table->regNo;
+ 742              		.loc 1 155 5 view .LVU224
+ 155:BSP/ModbusSS.c ****     uint16_t idx = regNo - table->regNo;
+ 743              		.loc 1 155 33 is_stmt 0 view .LVU225
+ 744 0000 0388     		ldrh	r3, [r0]
+ 155:BSP/ModbusSS.c ****     uint16_t idx = regNo - table->regNo;
+ 745              		.loc 1 155 14 view .LVU226
+ 746 0002 C91A     		subs	r1, r1, r3
+ 747              	.LVL82:
+ 155:BSP/ModbusSS.c ****     uint16_t idx = regNo - table->regNo;
+ 748              		.loc 1 155 14 view .LVU227
+ 749 0004 89B2     		uxth	r1, r1
+ 750              	.LVL83:
+ 156:BSP/ModbusSS.c ****     return *((uint16_t*)table->buf + idx);
+ 751              		.loc 1 156 5 is_stmt 1 view .LVU228
+ 156:BSP/ModbusSS.c ****     return *((uint16_t*)table->buf + idx);
+ 752              		.loc 1 156 30 is_stmt 0 view .LVU229
+ 753 0006 8368     		ldr	r3, [r0, #8]
+ 157:BSP/ModbusSS.c **** }
+ 754              		.loc 1 157 1 view .LVU230
+ 755 0008 33F81100 		ldrh	r0, [r3, r1, lsl #1]
+ 756              	.LVL84:
+ 157:BSP/ModbusSS.c **** }
+ 757              		.loc 1 157 1 view .LVU231
+ 758 000c 7047     		bx	lr
+ 759              		.cfi_endproc
+ 760              	.LFE330:
+ 762              		.section	.text.ModbusSS_SetWord,"ax",%progbits
+ 763              		.align	1
+ 764              		.global	ModbusSS_SetWord
+ 765              		.syntax unified
+ 766              		.thumb
+ 767              		.thumb_func
+ 769              	ModbusSS_SetWord:
+ 770              	.LVL85:
+ 771              	.LFB331:
+ 160:BSP/ModbusSS.c **** {
+ 772              		.loc 1 160 1 is_stmt 1 view -0
+ 773              		.cfi_startproc
+ 774              		@ args = 0, pretend = 0, frame = 0
+ 775              		@ frame_needed = 0, uses_anonymous_args = 0
+ARM GAS  C:\Users\sr1\AppData\Local\Temp\ccHJWCCg.s 			page 22
+
+
+ 776              		@ link register save eliminated.
+ 164:BSP/ModbusSS.c ****     *((uint16_t*)table->buf + regNo - table->regNo) = value;
+ 777              		.loc 1 164 5 view .LVU233
+ 164:BSP/ModbusSS.c ****     *((uint16_t*)table->buf + regNo - table->regNo) = value;
+ 778              		.loc 1 164 23 is_stmt 0 view .LVU234
+ 779 0000 8368     		ldr	r3, [r0, #8]
+ 164:BSP/ModbusSS.c ****     *((uint16_t*)table->buf + regNo - table->regNo) = value;
+ 780              		.loc 1 164 44 view .LVU235
+ 781 0002 0088     		ldrh	r0, [r0]
+ 782              	.LVL86:
+ 164:BSP/ModbusSS.c ****     *((uint16_t*)table->buf + regNo - table->regNo) = value;
+ 783              		.loc 1 164 37 view .LVU236
+ 784 0004 091A     		subs	r1, r1, r0
+ 785              	.LVL87:
+ 164:BSP/ModbusSS.c ****     *((uint16_t*)table->buf + regNo - table->regNo) = value;
+ 786              		.loc 1 164 53 view .LVU237
+ 787 0006 23F81120 		strh	r2, [r3, r1, lsl #1]	@ movhi
+ 165:BSP/ModbusSS.c **** }
+ 788              		.loc 1 165 1 view .LVU238
+ 789 000a 7047     		bx	lr
+ 790              		.cfi_endproc
+ 791              	.LFE331:
+ 793              		.text
+ 794              	.Letext0:
+ 795              		.file 2 "c:\\program files\\vscodestmtools\\arm-none-eabi-gcc\\12.2.1-1.2.1\\.content\\arm-none-ea
+ 796              		.file 3 "c:\\program files\\vscodestmtools\\arm-none-eabi-gcc\\12.2.1-1.2.1\\.content\\arm-none-ea
+ 797              		.file 4 "BSP/ModbusSS.h"
+ARM GAS  C:\Users\sr1\AppData\Local\Temp\ccHJWCCg.s 			page 23
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 ModbusSS.c
+C:\Users\sr1\AppData\Local\Temp\ccHJWCCg.s:21     .text.getTable:0000000000000000 $t
+C:\Users\sr1\AppData\Local\Temp\ccHJWCCg.s:26     .text.getTable:0000000000000000 getTable
+C:\Users\sr1\AppData\Local\Temp\ccHJWCCg.s:144    .text.getTable:0000000000000064 $d
+C:\Users\sr1\AppData\Local\Temp\ccHJWCCg.s:149    .text.getTable:0000000000000074 $t
+C:\Users\sr1\AppData\Local\Temp\ccHJWCCg.s:161    .text._Crc16:0000000000000000 $t
+C:\Users\sr1\AppData\Local\Temp\ccHJWCCg.s:166    .text._Crc16:0000000000000000 _Crc16
+C:\Users\sr1\AppData\Local\Temp\ccHJWCCg.s:257    .text.ModbusSS_ParseRxData:0000000000000000 $t
+C:\Users\sr1\AppData\Local\Temp\ccHJWCCg.s:263    .text.ModbusSS_ParseRxData:0000000000000000 ModbusSS_ParseRxData
+C:\Users\sr1\AppData\Local\Temp\ccHJWCCg.s:728    .text.ModbusSS_GetWord:0000000000000000 $t
+C:\Users\sr1\AppData\Local\Temp\ccHJWCCg.s:734    .text.ModbusSS_GetWord:0000000000000000 ModbusSS_GetWord
+C:\Users\sr1\AppData\Local\Temp\ccHJWCCg.s:763    .text.ModbusSS_SetWord:0000000000000000 $t
+C:\Users\sr1\AppData\Local\Temp\ccHJWCCg.s:769    .text.ModbusSS_SetWord:0000000000000000 ModbusSS_SetWord
+
+NO UNDEFINED SYMBOLS
