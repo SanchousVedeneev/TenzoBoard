@@ -57,7 +57,7 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define TIM6_Presc (168-1)
+#define TIM6_Presc (1680-1)
 #define TIM7_ARR 1000
 #define TIM6_ARR 10000
 #define TIM7_Presc (168-1)

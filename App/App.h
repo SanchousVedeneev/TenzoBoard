@@ -3,7 +3,6 @@
 
 #include "main.h"
 
-
 typedef enum
 {
     ADC_ADS1251 = 0,
@@ -11,18 +10,13 @@ typedef enum
     ADC_T = 2
 } ADC_enum;
 
+#define COUNT_REG_SPI_BUF (3)
 typedef struct 
 {
-    uint16_t spi_buf_ADS1251[3];
-    int16_t  ADC_ADS1251_data_i16;
-    int32_t  ADC_ADS1251_data_i32;
-
-    uint16_t spi_buf_ADS1231[3];
-    int16_t  ADC_ADS1231_data_i16;
-    int32_t  ADC_ADS1231_data_i32;
-
-    int16_t  ADC_T_data_i16;
-} Mdb_data_AI_struct;
+    uint16_t spi_buf[3];
+    int16_t  data_i16;
+    int32_t  data_i32;
+} ADC_struct;
 
 #define PROGRAM_ADC_MAX_FILTER_ORDER   (10)
 typedef struct {
@@ -35,12 +29,13 @@ typedef struct {
     uint8_t order;
 }ADC_filter_typedef;
 
-
-#define COUNT_TENZO_ADC (2)
+#define COUNT_ADC (3)
 typedef struct 
 {
-    Mdb_data_AI_struct Mdb_data_AI;
-    ADC_filter_typedef adc_filter[COUNT_TENZO_ADC];
+    ADC_filter_typedef adc_filter[COUNT_ADC];
+    ADC_struct ADC_ADS1251;
+    ADC_struct ADC_ADS1231;
+    int16_t ADC_T_data_i16;
 } App_struct;
 
 //------------------------------ FUNCTION ------------------------------//

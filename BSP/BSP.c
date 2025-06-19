@@ -12,7 +12,7 @@ void bsp_init()
 
   HAL_ADCEx_Calibration_Start(&hadc2, ADC_SINGLE_ENDED);
 
-  bsp_tim6_10ms_start();
+  bsp_tim6_100ms_start();
 
   HAL_ADCEx_InjectedStart_IT(&hadc2);
   return;
@@ -130,11 +130,17 @@ void BSP_RS485_1_IRQ_HANDLER_RTOF(void)
 
 #define ADR_MDB_MIN  (uint8_t)(1)
 #define ADR_MDB_MAX  (uint8_t)(63)
-
 uint8_t bsp_get_adr_mdb()
 {
-  uint8_t adr_mdb = 1;
-  
+  uint8_t adr_mdb = 0;
+
+  // adr_mdb |= BSP_GET_DI(BSP_ADR_0) << 0;
+  // adr_mdb |= BSP_GET_DI(BSP_ADR_1) << 1;
+  // adr_mdb |= BSP_GET_DI(BSP_ADR_2) << 2;
+  // adr_mdb |= BSP_GET_DI(BSP_ADR_3) << 3;
+  // adr_mdb |= BSP_GET_DI(BSP_ADR_4) << 4;
+  // adr_mdb |= BSP_GET_DI(BSP_ADR_5) << 5;
+
   if (BSP_GET_DI(BSP_ADR_0) == GPIO_PIN_SET)
   {
     BSP_SET_BIT(adr_mdb, 0);
@@ -220,9 +226,12 @@ void TIM7_DAC_IRQHandler(void)
   }
   return;
 }
-__weak void bsp_tim7_1ms_callback();
+__weak void bsp_tim7_1ms_callback()
+{
+  asm("Nop");
+}
 
-void bsp_tim6_10ms_start()
+void bsp_tim6_100ms_start()
 {
   HAL_TIM_Base_Start(&htim6);
 }
@@ -239,7 +248,10 @@ void ADC1_2_IRQHandler(void)
   }
 }
 
-__weak void bsp_ADC_data_ready();
+__weak void bsp_ADC_data_ready()
+{
+  asm("Nop");
+}
 // ---------------------------- ADC END ----------------------------------
 
 // ------------------------------ SPI ------------------------------------
@@ -247,25 +259,26 @@ uint8_t SPI_data_rx_ADS1251[4];
 uint32_t bsp_get_data_spi_ads1251()
 {
   uint32_t ADC_DATA_RAW = 0;
+
+  // Выход TIM1 тактирует АЦП ADS1251
+  // Частота тактирования fCLK = 38400 Гц
+  // Период преобразвания АЦП T = 0.01 с, f = 100 Гц
+
+  // Включаем тактирование АЦП
   HAL_TIM_OC_Start_IT(&htim1, TIM_CHANNEL_1);
-  while(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14) == GPIO_PIN_RESET)
+
+  // Производим 5 преобразвоаний АЦП для большей точности, берем значение 5-го преобразования
+  for (uint8_t i = 0; i < 5; i++)
   {
-    ;
-  }
-  while(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14) == GPIO_PIN_SET)
-  {
-    ;
-  }
-  while(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14) == GPIO_PIN_RESET)
-  {
-    ;
-  }
-  while(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14) == GPIO_PIN_SET)
-  {
-    ;
+    while (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14) == GPIO_PIN_RESET) { ; }
+    while (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14) == GPIO_PIN_SET)   { ; }
+    while(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14) == GPIO_PIN_RESET)  { ; }
+    HAL_Delay(1);
+    HAL_SPI_Receive(&hspi2, &SPI_data_rx_ADS1251[0], 4, 1);
+    HAL_Delay(1);
   }
 
-  HAL_SPI_Receive(&hspi2, &SPI_data_rx_ADS1251[0], 3, 1);
+  // Выключаем тактирование АЦП
   HAL_TIM_OC_Stop_IT(&htim1, TIM_CHANNEL_1);
 
   ADC_DATA_RAW |= ((uint32_t)SPI_data_rx_ADS1251[0] << 16);
@@ -278,7 +291,21 @@ uint8_t SPI_data_rx_ADS1231[4];
 uint32_t bsp_get_data_spi_ads1231()
 {
   uint32_t ADC_DATA_RAW = 0;
-  asm("NOP");
+
+  // Период преобразвания АЦП T = 0.0125 с, f = 80 Гц
+
+  while (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14) == GPIO_PIN_SET)   { ; }
+  while (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14) == GPIO_PIN_RESET) { ; }
+  for (uint8_t i = 0; i < 5; i++)
+  {
+    while (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14) == GPIO_PIN_SET) { ; }
+    HAL_SPI_Receive(&hspi1, &SPI_data_rx_ADS1231[0], 4, 1);
+    HAL_Delay(1);
+  }
+
+  ADC_DATA_RAW |= ((uint32_t)SPI_data_rx_ADS1231[0] << 16);
+  ADC_DATA_RAW |= ((uint32_t)SPI_data_rx_ADS1231[1] << 8);
+  ADC_DATA_RAW |= ((uint32_t)SPI_data_rx_ADS1231[2] << 0);
   return ADC_DATA_RAW;
 }
 
