@@ -26,8 +26,8 @@
 
 #define BSP_SLEEP                 DO_SLEEP_GPIO_Port, DO_SLEEP_Pin
 
-#define BSP_SLEEP_PWR_TENZO_ON	  HAL_GPIO_WritePin(BSP_SLEEP, GPIO_PIN_RESET)
-#define BSP_SLEEP_PWR_TENZO_OFF   HAL_GPIO_WritePin(BSP_SLEEP, GPIO_PIN_SET)
+#define BSP_PWR_TENZO_ON	      HAL_GPIO_WritePin(BSP_SLEEP, GPIO_PIN_SET)
+#define BSP_PWR_TENZO_OFF         HAL_GPIO_WritePin(BSP_SLEEP, GPIO_PIN_RESET)
 
 #define BSP_GET_BIT(REG, BIT)     (REG & (1 << BIT))
 #define BSP_SET_BIT(REG, BIT)     (REG |= (1 << BIT))
@@ -68,7 +68,7 @@ uint8_t bsp_get_adr_mdb();
 void bsp_tim7_1ms_start();
 void bsp_tim7_1ms_callback();
 
-void bsp_tim6_100ms_start();
+void bsp_tim6_300ms_start();
 // --------------------------- TIM END --------------------------- //
 
 // ----------------------------- SPI ----------------------------- //

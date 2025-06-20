@@ -1,4 +1,3 @@
-
 #include "BSP.h"
 
 // ------------------------------ INIT ------------------------------
@@ -12,7 +11,7 @@ void bsp_init()
 
   HAL_ADCEx_Calibration_Start(&hadc2, ADC_SINGLE_ENDED);
 
-  bsp_tim6_100ms_start();
+  bsp_tim6_300ms_start();
 
   HAL_ADCEx_InjectedStart_IT(&hadc2);
   return;
@@ -231,7 +230,7 @@ __weak void bsp_tim7_1ms_callback()
   asm("Nop");
 }
 
-void bsp_tim6_100ms_start()
+void bsp_tim6_300ms_start()
 {
   HAL_TIM_Base_Start(&htim6);
 }
@@ -261,8 +260,8 @@ uint32_t bsp_get_data_spi_ads1251()
   uint32_t ADC_DATA_RAW = 0;
 
   // Выход TIM1 тактирует АЦП ADS1251
-  // Частота тактирования fCLK = 38400 Гц
-  // Период преобразвания АЦП T = 0.01 с, f = 100 Гц
+  // Частота тактирования fCLK = 30720 Гц
+  // Период преобразвания АЦП T = 0.0125 с, f = 80 Гц
 
   // Включаем тактирование АЦП
   HAL_TIM_OC_Start_IT(&htim1, TIM_CHANNEL_1);
@@ -270,9 +269,9 @@ uint32_t bsp_get_data_spi_ads1251()
   // Производим 5 преобразвоаний АЦП для большей точности, берем значение 5-го преобразования
   for (uint8_t i = 0; i < 5; i++)
   {
-    while (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14) == GPIO_PIN_RESET) { ; }
-    while (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14) == GPIO_PIN_SET)   { ; }
-    while(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14) == GPIO_PIN_RESET)  { ; }
+    while (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14) == GPIO_PIN_RESET) { asm("Nop"); }
+    while (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14) == GPIO_PIN_SET)   { asm("Nop"); }
+    while(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14) == GPIO_PIN_RESET)  { asm("Nop"); }
     HAL_Delay(1);
     HAL_SPI_Receive(&hspi2, &SPI_data_rx_ADS1251[0], 4, 1);
     HAL_Delay(1);
@@ -294,11 +293,12 @@ uint32_t bsp_get_data_spi_ads1231()
 
   // Период преобразвания АЦП T = 0.0125 с, f = 80 Гц
 
-  while (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14) == GPIO_PIN_SET)   { ; }
-  while (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14) == GPIO_PIN_RESET) { ; }
+  while (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14) == GPIO_PIN_SET)   { asm("Nop"); }
+  while (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14) == GPIO_PIN_RESET) { asm("Nop"); }
   for (uint8_t i = 0; i < 5; i++)
   {
-    while (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14) == GPIO_PIN_SET) { ; }
+    while (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14) == GPIO_PIN_SET) { asm("Nop"); }
+    HAL_Delay(1);
     HAL_SPI_Receive(&hspi1, &SPI_data_rx_ADS1231[0], 4, 1);
     HAL_Delay(1);
   }

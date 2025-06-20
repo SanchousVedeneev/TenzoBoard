@@ -10,6 +10,18 @@ typedef enum
     ADC_T = 2
 } ADC_enum;
 
+typedef struct 
+{
+    uint8_t ADC_ADS1251_order;
+    uint8_t ADC_ADS1251_filterN;
+
+    uint8_t ADC_ADS1231_order;
+    uint8_t ADC_ADS1231_filterN;
+
+    uint8_t ADC_T_order;
+    uint8_t ADC_T_filterN;
+} setupParam_struct;
+
 #define COUNT_REG_SPI_BUF (3)
 typedef struct 
 {
@@ -18,7 +30,7 @@ typedef struct
     int32_t  data_i32;
 } ADC_struct;
 
-#define PROGRAM_ADC_MAX_FILTER_ORDER   (10)
+#define PROGRAM_ADC_MAX_FILTER_ORDER   (5)
 typedef struct {
     float value;
     float value_last;
@@ -36,6 +48,7 @@ typedef struct
     ADC_struct ADC_ADS1251;
     ADC_struct ADC_ADS1231;
     int16_t ADC_T_data_i16;
+    setupParam_struct setupParam;
 } App_struct;
 
 //------------------------------ FUNCTION ------------------------------//
@@ -44,6 +57,8 @@ void app_init();
 void app_update_reg();
 void app_adc_data_filter(uint32_t ADC_Buf_raw, ADC_enum ADC);
 void app_adc_filter_init();
+void app_setupParam_init();
+void app_setupParam_setDefolt();
 //---------------------------- FUNCTION END ----------------------------//
 
 #endif

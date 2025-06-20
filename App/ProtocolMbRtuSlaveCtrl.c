@@ -35,7 +35,6 @@ ModbusSS_table_t mdb_table_bsp = {
     .quantity = MDB_BSP_BUF_COUNT,
     .regNo = MDB_TABLE_BSP_REG_NO,
     .type = ModbusSS_Holding};
-
 //--------------------  PROTOCOL END---------------------//
 
 //--------------------  TABLES ARRAY ---------------------//
@@ -74,15 +73,15 @@ __INLINE void protocolMbRtuSlaveCtrl_update_tables()
   ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_spi_buf_ADS1251_1,        App.ADC_ADS1251.spi_buf[1]);
   ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_spi_buf_ADS1251_2,        App.ADC_ADS1251.spi_buf[2]);
   ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_ADC_ADS1251_data_i16,     (uint16_t)App.ADC_ADS1251.data_i16);
-  ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_ADC_ADS1251_data_i32_1,   (uint16_t)( App.ADC_ADS1251.data_i32 & 0x0000FFFF));
-  ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_ADC_ADS1251_data_i32_2,   (uint16_t)((App.ADC_ADS1251.data_i32 & 0xFFFF0000) >> 16));
+  ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_ADC_ADS1251_data_i32_1,   (uint16_t)( (uint32_t)App.ADC_ADS1251.data_i32 & 0x0000FFFFUL));
+  ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_ADC_ADS1251_data_i32_2,   (uint16_t)(((uint32_t)App.ADC_ADS1251.data_i32 & 0xFFFF0000UL) >> 16));
 
   ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_spi_buf_ADS1231_0,        App.ADC_ADS1231.spi_buf[0]);
   ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_spi_buf_ADS1231_1,        App.ADC_ADS1231.spi_buf[1]);
   ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_spi_buf_ADS1231_2,        App.ADC_ADS1231.spi_buf[2]);
   ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_ADC_ADS1231_data_i16,     (uint16_t)App.ADC_ADS1231.data_i16);
-  ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_ADC_ADS1231_data_i32_1,   (uint16_t)( App.ADC_ADS1231.data_i32 & 0x0000FFFF));
-  ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_ADC_ADS1231_data_i32_2,   (uint16_t)((App.ADC_ADS1231.data_i32 & 0xFFFF0000) >> 16));
+  ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_ADC_ADS1231_data_i32_1,   (uint16_t)( (uint32_t)App.ADC_ADS1231.data_i32 & 0x0000FFFFUL));
+  ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_ADC_ADS1231_data_i32_2,   (uint16_t)(((uint32_t)App.ADC_ADS1231.data_i32 & 0xFFFF0000UL) >> 16));
 
   ModbusSS_SetWord(&mdb_table_bsp, tab_bsp_ADC_T_data_i16,           (uint16_t)App.ADC_T_data_i16);
 }
