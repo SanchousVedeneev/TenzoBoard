@@ -213,6 +213,3 @@ void app_adc_data_filter(uint32_t ADC_Buf_raw, ADC_enum adc)
 
   App.adc_filter[adc].value = App.adc_filter[adc].value_last = value;
 }
-
-
-
