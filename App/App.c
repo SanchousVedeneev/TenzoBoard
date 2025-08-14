@@ -2,7 +2,8 @@
 #include "BSP.h"
 #include "ProtocolMbRtuSlaveCtrl.h"
 
-App_struct App;
+App_typedef App;
+extern BSP_typedef Bsp;
 
 // @do
 // Добавить сохранение во Flash
@@ -11,9 +12,9 @@ void app_main(void)
 {
   bsp_init();
   app_init();
-    while (1) // основной цикл
+  while (1) // основной цикл
   {
-    HAL_Delay(500);
+    asm("Nop");
   }
 }
 
@@ -22,68 +23,65 @@ void app_init()
   protocolMbRtuSlaveCtrl_init(1);
   app_setupParam_init();
   app_adc_filter_init();
-  BSP_PWR_TENZO_ON;
   return;
 }
 
 void app_setupParam_init()
 {
   app_setupParam_setDefolt();
+  return;
 }
 
 void app_setupParam_setDefolt()
 {
-  App.setupParam.ADC_ADS1251_order = 2;
-  App.setupParam.ADC_ADS1251_filterN = 2;
+  // -------------------------- ADC_ADS1251 -------------------------- //
+  App.setupParam.ADC_ADS1251_order = 1;
+  App.setupParam.ADC_ADS1251_filterN = 1;
+  App.setupParam.ADC_ADS1251_shift = 0.0f;
+  App.setupParam.ADC_ADS1251_kMul = 1.0f;
+  // ------------------------ ADC_ADS1251 END ------------------------ //
 
-  App.setupParam.ADC_ADS1231_order = 2;
-  App.setupParam.ADC_ADS1231_filterN = 2;
-
-  App.setupParam.ADC_T_order = 2;
-  App.setupParam.ADC_T_filterN = 2;
+  // -------------------------- ADC_ADS1231 -------------------------- //
+  App.setupParam.ADC_ADS1231_order = 1;
+  App.setupParam.ADC_ADS1231_filterN = 1;
+  App.setupParam.ADC_ADS1231_shift = 0.0f;
+  App.setupParam.ADC_ADS1231_kMul = 1.0f;
+  // ------------------------ ADC_ADS1231 END ------------------------ //
+  return;
 }
 
 void app_adc_filter_init()
 {
-// -------------------------- ADC_ADS1251 -------------------------- //
-    App.adc_filter[ADC_ADS1251].value = 0.0f;
-    App.adc_filter[ADC_ADS1251].value_last = 0.0f;
-    App.adc_filter[ADC_ADS1251].valueRaw = 0.0f;
-    for (uint8_t j = 0; j < PROGRAM_ADC_MAX_FILTER_ORDER; j++)
+  // -------------------------- ADC_ADS1251 -------------------------- //
+  App.adc_filter[ADC_ADS1251].value = 0.0f;
+  App.adc_filter[ADC_ADS1251].value_last = 0.0f;
+  App.adc_filter[ADC_ADS1251].valueRaw = 0.0f;
+  for (uint8_t j = 0; j < PROGRAM_ADC_MAX_FILTER_ORDER; j++)
     {
       App.adc_filter[ADC_ADS1251].buf[j] = 0.0f;
     }
-    App.adc_filter[ADC_ADS1251].bufIdx = 0;
-    App.adc_filter[ADC_ADS1251].filter_N = App.setupParam.ADC_ADS1251_filterN;
-    App.adc_filter[ADC_ADS1251].order = App.setupParam.ADC_ADS1251_order;
+  App.adc_filter[ADC_ADS1251].bufIdx = 0;
+  App.adc_filter[ADC_ADS1251].filter_N = App.setupParam.ADC_ADS1251_filterN;
+  App.adc_filter[ADC_ADS1251].order = App.setupParam.ADC_ADS1251_order;
+  App.adc_filter[ADC_ADS1251].shift = 0.0f;
+  App.adc_filter[ADC_ADS1251].kMul = 1.0f;
 // ------------------------ ADC_ADS1251 END ------------------------ //
 
-// -------------------------- ADC_ADS1231 -------------------------- //
-    App.adc_filter[ADC_ADS1231].value = 0.0f;
-    App.adc_filter[ADC_ADS1231].value_last = 0.0f;
-    App.adc_filter[ADC_ADS1231].valueRaw = 0.0f;
-    for (uint8_t j = 0; j < PROGRAM_ADC_MAX_FILTER_ORDER; j++)
+  // -------------------------- ADC_ADS1231 -------------------------- //
+  App.adc_filter[ADC_ADS1231].value = 0.0f;
+  App.adc_filter[ADC_ADS1231].value_last = 0.0f;
+  App.adc_filter[ADC_ADS1231].valueRaw = 0.0f;
+  for (uint8_t j = 0; j < PROGRAM_ADC_MAX_FILTER_ORDER; j++)
     {
       App.adc_filter[ADC_ADS1231].buf[j] = 0.0f;
     }
-    App.adc_filter[ADC_ADS1231].bufIdx = 0;
-    App.adc_filter[ADC_ADS1231].filter_N = App.setupParam.ADC_ADS1231_filterN;
-    App.adc_filter[ADC_ADS1231].order = App.setupParam.ADC_ADS1231_order;
-// ------------------------ ADC_ADS1231 END ------------------------ //
-
-// ----------------------------- ADC_T ----------------------------- //
-    App.adc_filter[ADC_T].value = 0.0f;
-    App.adc_filter[ADC_T].value_last = 0.0f;
-    App.adc_filter[ADC_T].valueRaw = 0.0f;
-    for (uint8_t j = 0; j < PROGRAM_ADC_MAX_FILTER_ORDER; j++)
-    {
-      App.adc_filter[ADC_T].buf[j] = 0.0f;
-    }
-    App.adc_filter[ADC_T].bufIdx = 0;
-    App.adc_filter[ADC_T].filter_N = App.setupParam.ADC_T_filterN;
-    App.adc_filter[ADC_T].order = App.setupParam.ADC_T_order;
-// --------------------------- ADC_T END --------------------------- //
-
+  App.adc_filter[ADC_ADS1231].bufIdx = 0;
+  App.adc_filter[ADC_ADS1231].filter_N = App.setupParam.ADC_ADS1231_filterN;
+  App.adc_filter[ADC_ADS1231].order = App.setupParam.ADC_ADS1231_order;
+  App.adc_filter[ADC_ADS1231].shift = 0.0f;
+  App.adc_filter[ADC_ADS1231].kMul = 1.0f;
+  // ------------------------ ADC_ADS1231 END ------------------------ //
+  return;
 }
 
 #define GET_ADC_VALUE_PERIOD (uint16_t)(0U)
@@ -96,8 +94,23 @@ void bsp_tim7_1000ms_callback()
     BSP_PWR_TENZO_ON;
     BSP_LED_ON(BSP_LED_1);
 
-    app_adc_data_filter(bsp_get_data_spi_ads1251(), ADC_ADS1251);
-    app_adc_data_filter(bsp_get_data_spi_ads1231(), ADC_ADS1231);
+    // if (bsp_get_data_spi_ads1251(145) == SPI_ADC_OK)
+    // {
+    //   app_adc_data_filter(Bsp.ADC_ADS1251.data_raw, ADC_ADS1251);
+    // }
+    // else
+    // {
+    //   app_adc_data_filter(0, ADC_ADS1251);
+    // }
+
+    if (bsp_get_data_spi_ads1231(145) == SPI_ADC_OK)
+    {
+      app_adc_data_filter(Bsp.ADC_ADS1231.data_raw, ADC_ADS1231);
+    }
+    else
+    {
+      app_adc_data_filter(0, ADC_ADS1231);
+    }
     
     BSP_LED_OFF(BSP_LED_1);
     BSP_PWR_TENZO_OFF;
@@ -111,33 +124,44 @@ void bsp_tim7_1000ms_callback()
 
 #define K_X10      (float)(10.0f)
 #define K_X1000    (float)(1000.0f)
-#define K_X10000   (float)(10000.0f)
+#define K_X1000000   (float)(1000000.0f)
 void app_update_reg()
 {
   // --- ADC_ADS1251
-  for (uint8_t i = 0; i < COUNT_REG_SPI_BUF; i++)
-  {
-    App.ADC_ADS1251.spi_buf[i] = SPI_data_rx_ADS1251[i];
-  }
-  App.ADC_ADS1251.data_i16 = (int16_t)(App.adc_filter[ADC_ADS1251].value * K_X1000);  // [В*1000]
-  App.ADC_ADS1251.data_i32 = (int32_t)(App.adc_filter[ADC_ADS1251].value * K_X10000); // [В*10000]
+  App.ADC_ADS1251.data_i16 = (int16_t)(App.adc_filter[ADC_ADS1251].value * K_X1000);    // [В*1000]
+  App.ADC_ADS1251.data_i32 = (int32_t)(App.adc_filter[ADC_ADS1251].value * K_X1000000); // [В*1000000]
   
   // --- ADC_ADS1231
-  for (uint8_t i = 0; i < COUNT_REG_SPI_BUF; i++)
+  App.ADC_ADS1231.data_i16 = (int16_t)(App.adc_filter[ADC_ADS1231].value * K_X1000);    // [В*1000]
+  App.ADC_ADS1231.data_i32 = (int32_t)(App.adc_filter[ADC_ADS1231].value * K_X1000000); // [В*1000000]
+
+  // --- DI_state
+  if (BSP_GET_DI(BSP_IN1) == GPIO_PIN_SET)
   {
-    App.ADC_ADS1231.spi_buf[i] = SPI_data_rx_ADS1231[i];
+    BSP_SET_BIT(App.DI_state, 1);
   }
-  App.ADC_ADS1231.data_i16 = (int16_t)(App.adc_filter[ADC_ADS1231].value * K_X1000);  // [В*1000]
-  App.ADC_ADS1231.data_i32 = (int32_t)(App.adc_filter[ADC_ADS1231].value * K_X10000); // [В*10000]
+  else
+  {
+    BSP_RESET_BIT(App.DI_state, 1);
+  }
+
+  // --- DI_rele_state
+  App.DI_rele_state = bsp_get_rele_state();
+
+  // --- DO_control
+  if (HAL_GPIO_ReadPin(BSP_OUT1) == GPIO_PIN_SET)
+  {
+    BSP_SET_BIT(App.DO_control, 1);
+  }
+  else
+  {
+    BSP_RESET_BIT(App.DO_control, 1);
+  }
 
   // -- ADC_T
-  App.ADC_T_data_i16 = (int16_t)(App.adc_filter[ADC_T].value * K_X10);                // [C*10]
+  //App.ADC_T_data_i16 = (int16_t)(App.adc_filter[ADC_T].value * K_X10);                // [C*10]
 }
 
-void bsp_ADC_data_ready()
-{
-  app_adc_data_filter(((HAL_ADCEx_InjectedGetValue(&hadc2, ADC_INJECTED_RANK_1)/16)), ADC_T);
-}
 
 #define ADC_24BIT_FUL_SCALE   (float)(0x16777215UL)
 
@@ -181,12 +205,6 @@ void app_adc_data_filter(uint32_t ADC_Buf_raw, ADC_enum adc)
       data = ((float)ADC_Buf_raw - (ADC_ADS1231_MAX_VAL*2) - 1.0f) / (ADC_ADS1231_MAX_VAL + 1.0f) * ADC_ADS1231_REF_VOLT;
     }
   }
-  else if (adc == ADC_T)
-  {
-    //@do
-    // Дописать обработчик для значения температуры c АЦП
-    asm("NOP");
-  }
 
   App.adc_filter[adc].buf[App.adc_filter[adc].bufIdx++] = data;
 
@@ -202,7 +220,7 @@ void app_adc_data_filter(uint32_t ADC_Buf_raw, ADC_enum adc)
 
   App.adc_filter[adc].valueRaw = sum / (float)App.adc_filter[adc].order;
 
-  value = App.adc_filter[adc].valueRaw;
+  value = (App.adc_filter[adc].valueRaw - App.adc_filter[adc].shift) * App.adc_filter[adc].kMul;
 
   valueLast = App.adc_filter[adc].value_last;
 
@@ -211,4 +229,10 @@ void app_adc_data_filter(uint32_t ADC_Buf_raw, ADC_enum adc)
   value = valueLast + kFilter * (value - valueLast);
 
   App.adc_filter[adc].value = App.adc_filter[adc].value_last = value;
+}
+
+int16_t app_get_temp_NTC(uint16_t value_raw)
+{
+  ;
+  //@do - сделать преобразования для получения температуры
 }

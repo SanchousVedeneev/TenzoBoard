@@ -23,7 +23,11 @@
 #define BSP_ADR_5                 DI_ADR_5_GPIO_Port, DI_ADR_5_Pin
 
 #define BSP_IN1                   DI_IN_1_GPIO_Port, DI_IN_1_Pin
+
 #define BSP_OUT1                  DO_OUT_1_GPIO_Port, DO_OUT_1_Pin
+
+#define BSP_SPI1_MISO             GPIOA, GPIO_PIN_6
+#define BSP_SPI2_MISO             GPIOB, GPIO_PIN_14
 
 #define BSP_OUT_SET(OUT)	      HAL_GPIO_WritePin(OUT, GPIO_PIN_SET)
 #define BSP_OUT_RESET(OUT)	      HAL_GPIO_WritePin(OUT, GPIO_PIN_RESET)
@@ -79,17 +83,38 @@ void bsp_tim6_300ms_start();
 // --------------------------- TIM END --------------------------- //
 
 // ----------------------------- SPI ----------------------------- //
-uint32_t bsp_get_data_spi_ads1251();
-extern uint8_t SPI_data_rx_ADS1251[4];
+typedef enum
+{
+    SPI_ADC_OK        = 0x00U,
+    SPI_ADC_TIMEOUT   = 0x01U
+}SPI_ADC_status_typedef;
 
-uint32_t bsp_get_data_spi_ads1231();
-extern uint8_t SPI_data_rx_ADS1231[4];
+SPI_ADC_status_typedef bsp_get_data_spi_ads1251(uint8_t timeout);
+
+SPI_ADC_status_typedef bsp_get_data_spi_ads1231(uint8_t timeout);
+
+#define COUNT_REG_SPI_BUF (4)
+typedef struct 
+{
+    uint8_t spi_buf[COUNT_REG_SPI_BUF];
+    uint32_t data_raw;
+} SPI_ADC_typedef;
+
+typedef struct 
+{
+    SPI_ADC_typedef ADC_ADS1251;
+    SPI_ADC_typedef ADC_ADS1231;
+    uint8_t         SPI_ADC_state;
+    uint16_t        NTC_value_raw;
+} BSP_typedef;
 // --------------------------- SPI END --------------------------- //
 
 // ----------------------------- ADC ----------------------------- //
-void bsp_ADC_data_ready();
+
 // --------------------------- ADC END --------------------------- //
 
 void bsp_init();
+
+uint8_t bsp_get_rele_state();
 
 #endif
