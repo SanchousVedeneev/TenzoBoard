@@ -15,12 +15,19 @@
 #define BSP_LED_OFF(LED)	      HAL_GPIO_WritePin(LED, GPIO_PIN_RESET)
 #define BSP_LED_TOGGLE(LED)		  HAL_GPIO_TogglePin(LED)
 
-#define BSP_ADR_0                 DI_ADR_0_GPIO_Port, DI_ADR_1_Pin
+#define BSP_ADR_0                 DI_ADR_0_GPIO_Port, DI_ADR_0_Pin
 #define BSP_ADR_1                 DI_ADR_1_GPIO_Port, DI_ADR_1_Pin
 #define BSP_ADR_2                 DI_ADR_2_GPIO_Port, DI_ADR_2_Pin
 #define BSP_ADR_3                 DI_ADR_3_GPIO_Port, DI_ADR_3_Pin
 #define BSP_ADR_4                 DI_ADR_4_GPIO_Port, DI_ADR_4_Pin
 #define BSP_ADR_5                 DI_ADR_5_GPIO_Port, DI_ADR_5_Pin
+
+#define BSP_IN1                   DI_IN_1_GPIO_Port, DI_IN_1_Pin
+#define BSP_OUT1                  DO_OUT_1_GPIO_Port, DO_OUT_1_Pin
+
+#define BSP_OUT_SET(OUT)	      HAL_GPIO_WritePin(OUT, GPIO_PIN_SET)
+#define BSP_OUT_RESET(OUT)	      HAL_GPIO_WritePin(OUT, GPIO_PIN_RESET)
+#define BSP_OUT_TOGGLE(OUT)	      HAL_GPIO_TogglePin(OUT)
 
 #define BSP_GET_DI(PORT_PIN)      (HAL_GPIO_ReadPin(PORT_PIN))
 
@@ -65,8 +72,8 @@ uint8_t bsp_get_adr_mdb();
 // --------------------------- RS-485 END----------------------------- //
 
 // ----------------------------- TIM ----------------------------- //
-void bsp_tim7_1ms_start();
-void bsp_tim7_1ms_callback();
+void bsp_tim7_1000ms_start();
+void bsp_tim7_1000ms_callback();
 
 void bsp_tim6_300ms_start();
 // --------------------------- TIM END --------------------------- //

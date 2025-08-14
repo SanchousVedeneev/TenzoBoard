@@ -7,7 +7,7 @@ void bsp_init()
 
   MX_TIM1_Init();
   
-  bsp_tim7_1ms_start();
+  bsp_tim7_1000ms_start();
 
   HAL_ADCEx_Calibration_Start(&hadc2, ADC_SINGLE_ENDED);
 
@@ -99,7 +99,6 @@ void BSP_RS485_1_IRQ_HANDLER_RTOF(void)
 
     if (BSP_RS485_1.NbRxDataToProcess != BSP_RS485_1.hdmarx->Instance->CNDTR)
     {
-      BSP_LED_TOGGLE(BSP_LED_1);
       bsp_rs485_callback_rxBlockReady(1);
       // bsp_dInOut_toggleDout(bsp_dInOut_led_rs485_1_g);
       // bsp_dInOut_resetDout(bsp_dInOut_led_rs485_1_y);
@@ -143,55 +142,67 @@ uint8_t bsp_get_adr_mdb()
   if (BSP_GET_DI(BSP_ADR_0) == GPIO_PIN_SET)
   {
     BSP_SET_BIT(adr_mdb, 0);
+    asm("Nop");
   }
   else
   {
     BSP_RESET_BIT(adr_mdb, 0);
+    asm("Nop");
   }
 
   if (BSP_GET_DI(BSP_ADR_1) == GPIO_PIN_SET)
   {
     BSP_SET_BIT(adr_mdb, 1);
+    asm("Nop");
   }
   else
   {
     BSP_RESET_BIT(adr_mdb, 1);
+    asm("Nop");
   }
 
   if (BSP_GET_DI(BSP_ADR_2) == GPIO_PIN_SET)
   {
     BSP_SET_BIT(adr_mdb, 2);
+    asm("Nop");
   }
   else
   {
     BSP_RESET_BIT(adr_mdb, 2);
+    asm("Nop");
   }
 
   if (BSP_GET_DI(BSP_ADR_3) == GPIO_PIN_SET)
   {
     BSP_SET_BIT(adr_mdb, 3);
+    asm("Nop");
   }
   else
   {
     BSP_RESET_BIT(adr_mdb, 3);
+    asm("Nop");
   }
 
   if (BSP_GET_DI(BSP_ADR_4) == GPIO_PIN_SET)
   {
     BSP_SET_BIT(adr_mdb, 4);
+    asm("Nop");
   }
   else
   {
     BSP_RESET_BIT(adr_mdb, 4);
+    asm("Nop");
   }
 
   if (BSP_GET_DI(BSP_ADR_5) == GPIO_PIN_SET)
   {
     BSP_SET_BIT(adr_mdb, 5);
+    asm("Nop");
   }
   else
   {
     BSP_RESET_BIT(adr_mdb, 5);
+    asm("Nop");
   }
 
   if (adr_mdb < ADR_MDB_MIN)
@@ -203,12 +214,15 @@ uint8_t bsp_get_adr_mdb()
     adr_mdb = ADR_MDB_MAX;
   }
 
+  asm("Nop");
+  asm("Nop");
+  asm("Nop");
   return adr_mdb;
 }
 // ------------------------------ RS485 END ------------------------------
 
 // ------------------------------ TIM ------------------------------------
-void bsp_tim7_1ms_start()
+void bsp_tim7_1000ms_start()
 {
   HAL_TIM_Base_Start_IT(&htim7);
 }
@@ -220,12 +234,12 @@ void TIM7_DAC_IRQHandler(void)
     if (__HAL_TIM_GET_IT_SOURCE(&htim7, TIM_IT_UPDATE) != RESET)
     {
       __HAL_TIM_CLEAR_IT(&htim7, TIM_IT_UPDATE);
-      bsp_tim7_1ms_callback();
+      bsp_tim7_1000ms_callback();
     }
   }
   return;
 }
-__weak void bsp_tim7_1ms_callback()
+__weak void bsp_tim7_1000ms_callback()
 {
   asm("Nop");
 }
@@ -254,10 +268,14 @@ __weak void bsp_ADC_data_ready()
 // ---------------------------- ADC END ----------------------------------
 
 // ------------------------------ SPI ------------------------------------
+
+#define ADS1251_TIMEOUT (140)
 uint8_t SPI_data_rx_ADS1251[4];
 uint32_t bsp_get_data_spi_ads1251()
 {
   uint32_t ADC_DATA_RAW = 0;
+  // uint32_t tickstart = 0;
+  // tickstart = HAL_GetTick();
 
   // Выход TIM1 тактирует АЦП ADS1251
   // Частота тактирования fCLK = 30720 Гц
@@ -269,12 +287,19 @@ uint32_t bsp_get_data_spi_ads1251()
   // Производим 5 преобразвоаний АЦП для большей точности, берем значение 5-го преобразования
   for (uint8_t i = 0; i < 5; i++)
   {
-    while (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14) == GPIO_PIN_RESET) { asm("Nop"); }
-    while (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14) == GPIO_PIN_SET)   { asm("Nop"); }
-    while(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14) == GPIO_PIN_RESET)  { asm("Nop"); }
-    HAL_Delay(1);
+    // while ((HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14) == GPIO_PIN_RESET) && ((HAL_GetTick() - tickstart) >=  ADS1251_TIMEOUT))  { asm("Nop"); }
+    // while ((HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14) == GPIO_PIN_SET)   && ((HAL_GetTick() - tickstart) >=  ADS1251_TIMEOUT))  { asm("Nop"); }
+    // while ((HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14) == GPIO_PIN_RESET) && ((HAL_GetTick() - tickstart) >=  ADS1251_TIMEOUT))  { asm("Nop"); }
+    // while ((HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14) == GPIO_PIN_SET)   && ((HAL_GetTick() - tickstart) >=  ADS1251_TIMEOUT))  { asm("Nop"); }
+    while (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14) == GPIO_PIN_RESET)  { asm("Nop"); }
+    while (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14) == GPIO_PIN_SET)    { asm("Nop"); }
+    while (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14) == GPIO_PIN_RESET)  { asm("Nop"); }
+    while (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14) == GPIO_PIN_SET)    { asm("Nop"); }
+    for (uint8_t i = 0; i < 200; i++)
+    {
+      asm("Nop");
+    }
     HAL_SPI_Receive(&hspi2, &SPI_data_rx_ADS1251[0], 4, 1);
-    HAL_Delay(1);
   }
 
   // Выключаем тактирование АЦП
@@ -286,23 +311,36 @@ uint32_t bsp_get_data_spi_ads1251()
   return ADC_DATA_RAW;
 }
 
+//#define TEST_ADS1231
 uint8_t SPI_data_rx_ADS1231[4];
 uint32_t bsp_get_data_spi_ads1231()
 {
-  uint32_t ADC_DATA_RAW = 0;
-
   // Период преобразвания АЦП T = 0.0125 с, f = 80 Гц
+  uint32_t ADC_DATA_RAW = 0;
+  
+  #ifdef TEST_ADS1231
+    HAL_SPI_Receive(&hspi1, &SPI_data_rx_ADS1231[0], 4, 1);
+    ADC_DATA_RAW |= ((uint32_t)SPI_data_rx_ADS1231[0] << 16);
+    ADC_DATA_RAW |= ((uint32_t)SPI_data_rx_ADS1231[1] << 8);
+    ADC_DATA_RAW |= ((uint32_t)SPI_data_rx_ADS1231[2] << 0);
+    return ADC_DATA_RAW;
+  #endif
 
-  while (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14) == GPIO_PIN_SET)   { asm("Nop"); }
-  while (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14) == GPIO_PIN_RESET) { asm("Nop"); }
+  while (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_6) == GPIO_PIN_SET)     { asm("Nop"); }
+  while (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_6) == GPIO_PIN_RESET)   { asm("Nop"); }
   for (uint8_t i = 0; i < 5; i++)
   {
-    while (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14) == GPIO_PIN_SET) { asm("Nop"); }
-    HAL_Delay(1);
+    while (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_6) == GPIO_PIN_SET)   { asm("Nop"); }
+    for (uint8_t i = 0; i < 200; i++)
+    {
+      asm("Nop");
+    }
     HAL_SPI_Receive(&hspi1, &SPI_data_rx_ADS1231[0], 4, 1);
-    HAL_Delay(1);
+    for (uint8_t i = 0; i < 200; i++)
+    {
+      asm("Nop");
+    }
   }
-
   ADC_DATA_RAW |= ((uint32_t)SPI_data_rx_ADS1231[0] << 16);
   ADC_DATA_RAW |= ((uint32_t)SPI_data_rx_ADS1231[1] << 8);
   ADC_DATA_RAW |= ((uint32_t)SPI_data_rx_ADS1231[2] << 0);

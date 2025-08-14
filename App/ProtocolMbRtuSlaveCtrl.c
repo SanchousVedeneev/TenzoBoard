@@ -64,6 +64,8 @@ void protocolMbRtuSlaveCtrl_init(uint8_t portNo)
 {
   HAL_Delay(100);
   bsp_rs485_setPortToModbusRtu(portNo, modbusBufRxTxRtu485, MODBUS_SS_BUF_CNT);
+  asm("Nop");
+  HAL_Delay(100);
   modbusSS_rtu_rs485.slaveId = bsp_get_adr_mdb();
 }
 
@@ -154,7 +156,12 @@ void bsp_rs485_callback_rxBlockReady(uint8_t portNo)
   else if (blockSizeByte != -1)
   {
     asm("NOP");
+    BSP_LED_TOGGLE(BSP_LED_2);
     bsp_rs485_sendBlock(portNo, modbusSS_rtu_rs485.bufRxTx, blockSizeByte);
+    asm("NOP");
+  }
+  else
+  {
     asm("NOP");
   }
 }

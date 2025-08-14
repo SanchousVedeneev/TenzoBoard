@@ -11,8 +11,7 @@ void app_main(void)
 {
   bsp_init();
   app_init();
-
-  while (1) // основной цикл
+    while (1) // основной цикл
   {
     HAL_Delay(500);
   }
@@ -21,9 +20,9 @@ void app_main(void)
 void app_init()
 {
   protocolMbRtuSlaveCtrl_init(1);
-
+  app_setupParam_init();
   app_adc_filter_init();
-  BSP_PWR_TENZO_OFF;
+  BSP_PWR_TENZO_ON;
   return;
 }
 
@@ -55,8 +54,8 @@ void app_adc_filter_init()
       App.adc_filter[ADC_ADS1251].buf[j] = 0.0f;
     }
     App.adc_filter[ADC_ADS1251].bufIdx = 0;
-    App.adc_filter[ADC_ADS1251].filter_N = 3;
-    App.adc_filter[ADC_ADS1251].order = 3;
+    App.adc_filter[ADC_ADS1251].filter_N = App.setupParam.ADC_ADS1251_filterN;
+    App.adc_filter[ADC_ADS1251].order = App.setupParam.ADC_ADS1251_order;
 // ------------------------ ADC_ADS1251 END ------------------------ //
 
 // -------------------------- ADC_ADS1231 -------------------------- //
@@ -68,8 +67,8 @@ void app_adc_filter_init()
       App.adc_filter[ADC_ADS1231].buf[j] = 0.0f;
     }
     App.adc_filter[ADC_ADS1231].bufIdx = 0;
-    App.adc_filter[ADC_ADS1231].filter_N = 3;
-    App.adc_filter[ADC_ADS1231].order = 3;
+    App.adc_filter[ADC_ADS1231].filter_N = App.setupParam.ADC_ADS1231_filterN;
+    App.adc_filter[ADC_ADS1231].order = App.setupParam.ADC_ADS1231_order;
 // ------------------------ ADC_ADS1231 END ------------------------ //
 
 // ----------------------------- ADC_T ----------------------------- //
@@ -81,30 +80,30 @@ void app_adc_filter_init()
       App.adc_filter[ADC_T].buf[j] = 0.0f;
     }
     App.adc_filter[ADC_T].bufIdx = 0;
-    App.adc_filter[ADC_T].filter_N = 3;
-    App.adc_filter[ADC_T].order = 3;
+    App.adc_filter[ADC_T].filter_N = App.setupParam.ADC_T_filterN;
+    App.adc_filter[ADC_T].order = App.setupParam.ADC_T_order;
 // --------------------------- ADC_T END --------------------------- //
 
 }
 
-#define GET_ADC_VALUE_PERIOD (uint16_t)(166U)
-void bsp_tim7_1ms_callback()
+#define GET_ADC_VALUE_PERIOD (uint16_t)(0U)
+void bsp_tim7_1000ms_callback()
 {
   static uint16_t cnt_1ms = 0;
 
-  if (cnt_1ms++ > GET_ADC_VALUE_PERIOD)
+  if (cnt_1ms++ >= GET_ADC_VALUE_PERIOD)
   {
     BSP_PWR_TENZO_ON;
-    HAL_Delay(5);
+    BSP_LED_ON(BSP_LED_1);
 
     app_adc_data_filter(bsp_get_data_spi_ads1251(), ADC_ADS1251);
     app_adc_data_filter(bsp_get_data_spi_ads1231(), ADC_ADS1231);
+    
+    BSP_LED_OFF(BSP_LED_1);
     BSP_PWR_TENZO_OFF;
 
     app_update_reg();
     protocolMbRtuSlaveCtrl_update_tables();
-
-    BSP_LED_TOGGLE(BSP_LED_1);
     cnt_1ms = 0;
   }
   return;
@@ -143,10 +142,10 @@ void bsp_ADC_data_ready()
 #define ADC_24BIT_FUL_SCALE   (float)(0x16777215UL)
 
 #define ADC_ADS1251_MAX_VAL   (float)(8388607.0f)
-#define ADC_ADS1251_REF_VOLT  (float)(4.0f)
+#define ADC_ADS1251_REF_VOLT  (float)(4.096f)
 
-#define ADC_ADS1231_MAX_VAL   (float)(8388607.0f)
-#define ADC_ADS1231_REF_VOLT  (float)(4.0f)
+#define ADC_ADS1231_MAX_VAL   (float)(4194303.0f)
+#define ADC_ADS1231_REF_VOLT  (float)(2.5f)
 
 void app_adc_data_filter(uint32_t ADC_Buf_raw, ADC_enum adc)
 {
@@ -172,14 +171,14 @@ void app_adc_data_filter(uint32_t ADC_Buf_raw, ADC_enum adc)
   else if (adc == ADC_ADS1231)
   {
     // Положительное напряжение на входе АЦП
-    if (ADC_Buf_raw <= (uint32_t)ADC_ADS1231_MAX_VAL)
+    if ((float)ADC_Buf_raw <= ADC_ADS1231_MAX_VAL)
     {
       data = (float)ADC_Buf_raw / ADC_ADS1231_MAX_VAL * ADC_ADS1231_REF_VOLT;
     }
     // Отрицательное напряжение на входе АЦП
     else
     {
-      data = ((float)ADC_Buf_raw - ADC_24BIT_FUL_SCALE - 1.0f) / (ADC_ADS1231_MAX_VAL + 1.0f) * ADC_ADS1231_REF_VOLT;
+      data = ((float)ADC_Buf_raw - (ADC_ADS1231_MAX_VAL*2) - 1.0f) / (ADC_ADS1231_MAX_VAL + 1.0f) * ADC_ADS1231_REF_VOLT;
     }
   }
   else if (adc == ADC_T)
