@@ -122,7 +122,7 @@ void MX_TIM6_Init(void)
   htim6.Init.Prescaler = TIM6_Presc;
   htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim6.Init.Period = 30000;
-  htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
   {
     Error_Handler();
@@ -154,8 +154,8 @@ void MX_TIM7_Init(void)
   htim7.Instance = TIM7;
   htim7.Init.Prescaler = TIM7_Presc;
   htim7.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim7.Init.Period = 30000;
-  htim7.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  htim7.Init.Period = 1000;
+  htim7.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim7) != HAL_OK)
   {
     Error_Handler();
@@ -206,7 +206,7 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* tim_baseHandle)
     __HAL_RCC_TIM7_CLK_ENABLE();
 
     /* TIM7 interrupt Init */
-    HAL_NVIC_SetPriority(TIM7_DAC_IRQn, 15, 0);
+    HAL_NVIC_SetPriority(TIM7_DAC_IRQn, 2, 0);
     HAL_NVIC_EnableIRQ(TIM7_DAC_IRQn);
   /* USER CODE BEGIN TIM7_MspInit 1 */
 

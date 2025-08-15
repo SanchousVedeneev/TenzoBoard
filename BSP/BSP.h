@@ -76,8 +76,8 @@ uint8_t bsp_get_adr_mdb();
 // --------------------------- RS-485 END----------------------------- //
 
 // ----------------------------- TIM ----------------------------- //
-void bsp_tim7_1000ms_start();
-void bsp_tim7_1000ms_callback();
+void bsp_tim7_100ms_start();
+void bsp_tim7_100ms_callback();
 
 void bsp_tim6_300ms_start();
 // --------------------------- TIM END --------------------------- //

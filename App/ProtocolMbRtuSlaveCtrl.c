@@ -191,15 +191,15 @@ __weak void protocolMbRtuSlaveCtrl_callback_H_WRITE(ModbusSS_table_t *table, uin
     switch (reg)
     {
     case tab_bsp_DO_control:
-      if (BSP_GET_BIT(value, 1) == 1)
+      if (BSP_GET_BIT(value, 0) == 1)
       {
         BSP_OUT_SET(BSP_OUT1);
-        BSP_SET_BIT(App.DO_control, 1);
+        BSP_SET_BIT(App.DO_control, 0);
       }
       else
       {
         BSP_OUT_RESET(BSP_OUT1);
-        BSP_RESET_BIT(App.DO_control, 1);
+        BSP_RESET_BIT(App.DO_control, 0);
       }
       break;
     default:

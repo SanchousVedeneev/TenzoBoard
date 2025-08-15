@@ -11,7 +11,7 @@ void bsp_init()
   SysTick_Config(SystemCoreClock/1000);
 
   HAL_Delay(100);
-  bsp_tim7_1000ms_start();
+  bsp_tim7_100ms_start();
 
   HAL_ADCEx_Calibration_Start(&hadc2, ADC_SINGLE_ENDED);
 
@@ -299,7 +299,7 @@ uint8_t bsp_get_rele_state()
 // ------------------------------ RS485 END ------------------------------
 
 // ------------------------------ TIM ------------------------------------
-void bsp_tim7_1000ms_start()
+void bsp_tim7_100ms_start()
 {
   HAL_TIM_Base_Start_IT(&htim7);
 }
@@ -311,13 +311,13 @@ void TIM7_DAC_IRQHandler(void)
     if (__HAL_TIM_GET_IT_SOURCE(&htim7, TIM_IT_UPDATE) != RESET)
     {
       __HAL_TIM_CLEAR_IT(&htim7, TIM_IT_UPDATE);
-      bsp_tim7_1000ms_callback();
+      bsp_tim7_100ms_callback();
     }
   }
   return;
 }
 
-__weak void bsp_tim7_1000ms_callback()
+__weak void bsp_tim7_100ms_callback()
 {
   asm("Nop");
 }
@@ -380,12 +380,12 @@ SPI_ADC_status_typedef bsp_get_data_spi_ads1251(uint8_t timeout)
 
   if ((HAL_GetTick() - tickstart) >=  timeout)
   {
-    BSP_SET_BIT(Bsp.SPI_ADC_state, 1);
+    BSP_SET_BIT(Bsp.SPI_ADC_state, 0);
     return SPI_ADC_TIMEOUT;
   }
   else
   {
-    BSP_RESET_BIT(Bsp.SPI_ADC_state, 1);
+    BSP_RESET_BIT(Bsp.SPI_ADC_state, 0);
     return SPI_ADC_OK;
   }
 }
@@ -424,12 +424,12 @@ SPI_ADC_status_typedef bsp_get_data_spi_ads1231(uint8_t timeout)
 
   if ((HAL_GetTick() - tickstart) >=  timeout)
   {
-    BSP_SET_BIT(Bsp.SPI_ADC_state, 2);
+    BSP_SET_BIT(Bsp.SPI_ADC_state, 1);
     return SPI_ADC_TIMEOUT;
   }
   else
   {
-    BSP_RESET_BIT(Bsp.SPI_ADC_state, 2);
+    BSP_RESET_BIT(Bsp.SPI_ADC_state, 1);
     return SPI_ADC_OK;
   }
 
