@@ -36,7 +36,7 @@ void app_main(void)
 
     BSP_OUT_TOGGLE(BSP_LED_1);
     BSP_PWR_TENZO_OFF;
-    HAL_Delay(50);
+    HAL_Delay(20);
   }
 }
 

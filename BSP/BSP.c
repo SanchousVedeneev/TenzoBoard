@@ -375,8 +375,8 @@ SPI_ADC_status_typedef bsp_get_data_spi_ads1251(uint8_t timeout)
   HAL_TIM_OC_Stop_IT(&htim1, TIM_CHANNEL_1);
 
   Bsp.ADC_ADS1251.data_raw |= ((uint32_t)Bsp.ADC_ADS1251.spi_buf[0] << 16);
-  Bsp.ADC_ADS1251.data_raw |= ((uint32_t)Bsp.ADC_ADS1251.spi_buf[0] << 8);
-  Bsp.ADC_ADS1251.data_raw |= ((uint32_t)Bsp.ADC_ADS1251.spi_buf[0] << 0);
+  Bsp.ADC_ADS1251.data_raw |= ((uint32_t)Bsp.ADC_ADS1251.spi_buf[1] << 8);
+  Bsp.ADC_ADS1251.data_raw |= ((uint32_t)Bsp.ADC_ADS1251.spi_buf[2] << 0);
 
   if ((HAL_GetTick() - tickstart) >=  timeout)
   {
