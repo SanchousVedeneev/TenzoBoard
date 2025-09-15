@@ -122,7 +122,7 @@ void protocolMbRtuSlaveCtrl_init(uint8_t portNo)
   HAL_Delay(100);
   bsp_rs485_setPortToModbusRtu(portNo, modbusBufRxTxRtu485, MODBUS_SS_BUF_CNT);
   asm("Nop");
-  HAL_Delay(100);
+  //HAL_Delay(100);
   modbusSS_rtu_rs485.slaveId = bsp_get_adr_mdb();
 }
 
