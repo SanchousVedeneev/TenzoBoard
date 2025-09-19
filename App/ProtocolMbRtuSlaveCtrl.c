@@ -172,7 +172,7 @@ __INLINE void protocolMbRtuSlaveCtrl_update_tables()
 
   ModbusSS_SetWord(&mdb_table_adc, tab_adc_NTC_T_i16,               (uint16_t)App.ADC_T_data_i16);
 
-  ModbusSS_SetWord(&mdb_table_adc, tab_bsp_spi_read_state,          Bsp.SPI_ADC_state);
+  ModbusSS_SetWord(&mdb_table_adc, tab_adc_state,                   Bsp.SPI_ADC_state);
 
   
 }
